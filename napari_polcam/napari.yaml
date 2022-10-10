@@ -1,4 +1,5 @@
 name: napari-polcam
+display_name: Napari Polcam
 contributions:
   commands:
     - id: napari-polcam.say_hi
