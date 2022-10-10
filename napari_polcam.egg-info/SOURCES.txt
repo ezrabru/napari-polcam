@@ -1,0 +1,9 @@
+pyproject.toml
+setup.cfg
+napari_polcam/__init__.py
+napari_polcam.egg-info/PKG-INFO
+napari_polcam.egg-info/SOURCES.txt
+napari_polcam.egg-info/dependency_links.txt
+napari_polcam.egg-info/entry_points.txt
+napari_polcam.egg-info/requires.txt
+napari_polcam.egg-info/top_level.txt
