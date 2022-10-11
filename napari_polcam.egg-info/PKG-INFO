@@ -1,4 +1,35 @@
 Metadata-Version: 2.1
 Name: napari-polcam
 Version: 0.0.1
+Summary: Napari plugin to process and render polarisation camera data
+Home-page: https://github.com/ezrabru/napari-polcam
+Author: Ezra Bruggeman
+Author-email: ezra.bruggeman@gmail.com
+License: BSD-3-Clause
+Project-URL: Bug Tracker, https://github.com/ezrabru/napari-polcam/issues
+Project-URL: Documentation, https://github.com/ezrabru/napari-polcam#README.md
+Project-URL: Source Code, https://github.com/ezrabru/napari-polcam
+Project-URL: User Support, https://github.com/ezrabru/napari-polcam/issues
+Classifier: Development Status :: 3 - Alpha
+Classifier: Intended Audience :: Developers
 Classifier: Framework :: napari
+Classifier: Topic :: Scientific/Engineering :: Image Processing
+Classifier: Topic :: Scientific/Engineering :: Information Analysis
+Classifier: Programming Language :: Python
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: Operating System :: OS Independent
+Classifier: License :: OSI Approced :: BSD License
+Requires-Python: >=3.7
+Description-Content-Type: text/markdown
+
+# napari-polcam
+
+Structure:
+- Load S0, S1 and S2
+- Generate AoLP and DoLP
+- Generate DoLPmap
+- Generate HSVmap
+- Add colormap thresholds
