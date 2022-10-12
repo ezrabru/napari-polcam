@@ -1,2 +1,0 @@
-[napari.manifest]
-napari-polcam = napari_polcam:napari.yaml
