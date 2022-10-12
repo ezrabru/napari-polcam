@@ -82,3 +82,6 @@ venv/
 
 # written by setuptools_scm
 **/_version.py
+docs/S0.tif
+docs/S1.tif
+docs/S2.tif
