@@ -85,8 +85,7 @@ class StokesEstimation(QWidget):
                                      float(self.lineEdit_scale_xy.text()),\
                                      float(self.lineEdit_scale_xy.text())))
 
-
-class StokesQWidget2(QWidget):
+class HSVmap(QWidget):
     # your QWidget.__init__ can optionally request the napari viewer instance
     # in one of two ways:
     # 1. use a parameter called `napari_viewer`, as done here
@@ -126,7 +125,7 @@ class StokesQWidget2(QWidget):
         btn_hsv_map = QPushButton("Calculate HSVmap")
         btn_hsv_map.clicked.connect(self._on_click_hsvmap)
         
-        self.setLayout(QHBoxLayout())
+        self.setLayout(QVBoxLayout())
         self.layout().addWidget(pixsize_xy)
         self.layout().addWidget(pixsize_z)
         self.layout().addWidget(btn_aolp)
