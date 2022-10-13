@@ -11,12 +11,19 @@ import napari
 
 from matplotlib.colors import hsv_to_rgb
 
-from vispy.color import Colormap
-
 from typing import TYPE_CHECKING
 
 from magicgui import magic_factory
-from qtpy.QtWidgets import QHBoxLayout, QPushButton, QWidget, QSpinBox, QLineEdit
+from qtpy.QtWidgets import QSpacerItem, QSizePolicy
+from qtpy.QtWidgets import (
+    QHBoxLayout,
+    QWidget,
+    QLineEdit,
+    QPushButton,
+    )
+
+from qtpy.QtCore import Qt
+from superqt import QDoubleRangeSlider
 
 if TYPE_CHECKING:
     import napari
@@ -32,19 +39,12 @@ class StokesQWidget(QWidget):
         self.viewer = napari_viewer
         
         pixsize_xy = QLineEdit()
+        pixsize_xy.setText("1.0")
         pixsize_xy.textChanged.connect(self._on_value_change_pixsize)
         
         pixsize_z = QLineEdit()
+        pixsize_z.setText("1.0")
         pixsize_z.textChanged.connect(self._on_value_change_pixsize)
-        
-        #btn_s0 = QPushButton("Set S0")
-        #btn_s0.clicked.connect(self._on_click_s0)
-        
-        #btn_s1 = QPushButton("Set S1")
-        #btn_s1.clicked.connect(self._on_click_s1)
-        
-        #btn_s2 = QPushButton("Set S2")
-        #btn_s2.clicked.connect(self._on_click_s2)
         
         btn_aolp = QPushButton("Calculate AoLP")
         btn_aolp.clicked.connect(self._on_click_aolp)
@@ -52,18 +52,32 @@ class StokesQWidget(QWidget):
         btn_dolp = QPushButton("Calculate DoLP")
         btn_dolp.clicked.connect(self._on_click_dolp)
         
+        slider_dolp = QDoubleRangeSlider()
+        slider_dolp.setOrientation(Qt.Horizontal)
+        slider_dolp.setMinimum(0)
+        slider_dolp.setMaximum(1)
+        slider_dolp.setValue([0,1])
+        slider_dolp.setSingleStep(0.001)
+        
+        slider_s0 = QDoubleRangeSlider()
+        slider_s0.setOrientation(Qt.Horizontal)
+        slider_s0.setMinimum(0)
+        slider_s0.setMaximum(1)
+        slider_s0.setValue([0,1])
+        slider_s0.setSingleStep(0.01)
+        
         btn_hsv_map = QPushButton("Calculate HSVmap")
         btn_hsv_map.clicked.connect(self._on_click_hsvmap)
         
         self.setLayout(QHBoxLayout())
         self.layout().addWidget(pixsize_xy)
         self.layout().addWidget(pixsize_z)
-        #self.layout().addWidget(btn_s0)
-        #self.layout().addWidget(btn_s1)
-        #self.layout().addWidget(btn_s2)
         self.layout().addWidget(btn_aolp)
         self.layout().addWidget(btn_dolp)
         self.layout().addWidget(btn_hsv_map)
+
+        self.layout().addWidget(slider_dolp)
+        self.layout().addWidget(slider_s0)
         
         self.lineEdit_scale_xy = pixsize_xy
         self.lineEdit_scale_z = pixsize_z
@@ -74,61 +88,38 @@ class StokesQWidget(QWidget):
         for layer in self.viewer.layers:
             layer.scale = [value_z, value_xy, value_xy]
 
-
-    def _on_click_s0(self):
-        num_layers = 0
-        for layer in self.viewer.layers.selection:
-            num_layers += 1
-        if num_layers == 1:
-            # get name of selected layer
-            listSelectedLayers = self.viewer.layers.selection
-            # save that this layer corresponds to S0
-            image = np.random.random((100, 1, 100))
-            self.viewer.add_image(image,channel_axis=1,name=["S0"])
-            print(f"you have selected S0: {listSelectedLayers}")
-        else:
-            print(f"You selected {num_layers} layers. Please select 1 layer.")
-        
-    def _on_click_s1(self):
-        num_layers = 0
-        for layer in self.viewer.layers.selection:
-            num_layers += 1
-        if num_layers == 1:
-            # get name of selected layer
-            listSelectedLayers = self.viewer.layers.selection
-            # save that this layer corresponds to S1
-            image = np.random.random((100, 1, 100))
-            self.viewer.add_image(image,channel_axis=1,name=["S1"])
-            print(f"you have selected S1: {listSelectedLayers}")
-        else:
-            print(f"You selected {num_layers} layers. Please select 1 layer.")
-            
-    def _on_click_s2(self):
-        num_layers = 0
-        for layer in self.viewer.layers.selection:
-            num_layers += 1
-        if num_layers == 1:
-            # get name of selected layer
-            listSelectedLayers = self.viewer.layers.selection
-            # save that this layer corresponds to S2
-            image = np.random.random((100, 1, 100))
-            self.viewer.add_image(image,channel_axis=1,name=["S2"])
-            print(f"you have selected S2: {listSelectedLayers}")
-        else:
-            print(f"You selected {num_layers} layers. Please select 1 layer.")
-            
+    #def _on_click_s0(self):
+    #    num_layers = 0
+    #    for layer in self.viewer.layers.selection:
+    #        num_layers += 1
+    #    if num_layers == 1:
+    #        # get name of selected layer
+    #        listSelectedLayers = self.viewer.layers.selection
+    #        # save that this layer corresponds to S0
+    #        image = np.random.random((100, 1, 100))
+    #        self.viewer.add_image(image,channel_axis=1,name=["S0"])
+    #        print(f"you have selected S0: {listSelectedLayers}")
+    #    else:
+    #        print(f"You selected {num_layers} layers. Please select 1 layer.")
+       
     def _on_click_aolp(self):
         s1 = self.viewer.layers['S1'].data
         s2 = self.viewer.layers['S2'].data
         AoLP = (1/2)*np.arctan(s2/s1)
-        self.viewer.add_image(AoLP,contrast_limits=[-np.pi/2,np.pi/2])
+        self.viewer.add_image(AoLP,contrast_limits=[-np.pi/2,np.pi/2],\
+                              scale=(float(self.lineEdit_scale_z.text()),\
+                                     float(self.lineEdit_scale_xy.text()),\
+                                     float(self.lineEdit_scale_xy.text())))
         
     def _on_click_dolp(self):
         s0 = self.viewer.layers['S0'].data
         s1 = self.viewer.layers['S1'].data
         s2 = self.viewer.layers['S2'].data
         DoLP = np.sqrt((s1*s1 + s2*s2)/(s0*s0))
-        self.viewer.add_image(DoLP,contrast_limits=[0,1])
+        self.viewer.add_image(DoLP,contrast_limits=[0,1],\
+                              scale=(float(self.lineEdit_scale_z.text()),\
+                                     float(self.lineEdit_scale_xy.text()),\
+                                     float(self.lineEdit_scale_xy.text())))
     
     def _on_click_hsvmap(self):
         h = self.viewer.layers['AoLP'].data
@@ -153,13 +144,22 @@ class StokesQWidget(QWidget):
         
         # hide all layers
         #for layer in self.viewer.layers.selection:
-        #    self.viewer.layers[layer].selected = False
+        #    layer.selected = False
         
         # add new images for the 3 colour channels
-        self.viewer.add_image(hsv_r,contrast_limits=[0,255],colormap="red",blending="additive")
-        self.viewer.add_image(hsv_g,contrast_limits=[0,255],colormap="green",blending="additive")
-        self.viewer.add_image(hsv_b,contrast_limits=[0,255],colormap="blue",blending="additive")
-        
+        self.viewer.add_image(hsv_r,contrast_limits=[0,255],colormap="red",blending="additive",\
+                              scale=(float(self.lineEdit_scale_z.text()),\
+                                     float(self.lineEdit_scale_xy.text()),\
+                                     float(self.lineEdit_scale_xy.text())))
+        self.viewer.add_image(hsv_g,contrast_limits=[0,255],colormap="green",blending="additive",\
+                              scale=(float(self.lineEdit_scale_z.text()),\
+                                     float(self.lineEdit_scale_xy.text()),\
+                                     float(self.lineEdit_scale_xy.text())))
+        self.viewer.add_image(hsv_b,contrast_limits=[0,255],colormap="blue",blending="additive",\
+                              scale=(float(self.lineEdit_scale_z.text()),\
+                                     float(self.lineEdit_scale_xy.text()),\
+                                     float(self.lineEdit_scale_xy.text())))
+        self._on_value_change_pixsize # adjust the voxel scaling
         
     def selected_image_layers(self):
         return [
