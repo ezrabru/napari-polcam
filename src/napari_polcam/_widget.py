@@ -13,8 +13,7 @@ from matplotlib.colors import hsv_to_rgb
 
 from typing import TYPE_CHECKING
 
-from magicgui import magic_factory
-from qtpy.QtWidgets import QSpacerItem, QSizePolicy
+#from qtpy.QtWidgets import QSpacerItem, QSizePolicy
 from qtpy.QtWidgets import (
     QHBoxLayout,
     QWidget,
@@ -87,20 +86,6 @@ class StokesQWidget(QWidget):
         value_z = float(self.lineEdit_scale_z.text())
         for layer in self.viewer.layers:
             layer.scale = [value_z, value_xy, value_xy]
-
-    #def _on_click_s0(self):
-    #    num_layers = 0
-    #    for layer in self.viewer.layers.selection:
-    #        num_layers += 1
-    #    if num_layers == 1:
-    #        # get name of selected layer
-    #        listSelectedLayers = self.viewer.layers.selection
-    #        # save that this layer corresponds to S0
-    #        image = np.random.random((100, 1, 100))
-    #        self.viewer.add_image(image,channel_axis=1,name=["S0"])
-    #        print(f"you have selected S0: {listSelectedLayers}")
-    #    else:
-    #        print(f"You selected {num_layers} layers. Please select 1 layer.")
        
     def _on_click_aolp(self):
         s1 = self.viewer.layers['S1'].data
@@ -128,7 +113,6 @@ class StokesQWidget(QWidget):
         
         h = (h + np.pi/2)/np.pi; # rescale [-pi/2, pi/2]to [0, 1]
         v = (v - np.min(v))/(np.max(v) - np.min(v)); # rescale intensity to [0 1]
-        
         
         numDim = len(h.shape) # number of dimensions of the dataset
         hsv = np.stack([h,s,v],numDim) # stack
@@ -167,17 +151,4 @@ class StokesQWidget(QWidget):
             for layer in self.viewer.layers.selection
             if isinstance(layer, napari.layers.Image)
         ]
-
-
-@magic_factory
-def example_magic_widget(img_layer: "napari.layers.Image"):
-    print(f"you have selected {img_layer}")
-
-
-# Uses the `autogenerate: true` flag in the plugin manifest
-# to indicate it should be wrapped as a magicgui to autogenerate
-# a widget.
-def example_function_widget(img_layer: "napari.layers.Image"):
-    print(f"you have selected {img_layer}")
-    
 
