@@ -15,8 +15,11 @@ contributions:
       python_name: napari_polcam._sample_data:make_sample_data
       title: Load sample data from napari PolCam
     - id: napari-polcam.make_stokes_qwidget
-      python_name: napari_polcam._widget:StokesQWidget
-      title: Make Stokes QWidget
+      python_name: napari_polcam._widget:StokesEstimation
+      title: Make Stokes Estimation QWidget
+    - id: napari-polcam.make_stokes_qwidget2
+      python_name: napari_polcam._widget:StokesQWidget2
+      title: Make Stokes QWidget2
   readers:
     - command: napari-polcam.get_reader
       accepts_directories: false
@@ -34,4 +37,6 @@ contributions:
       key: unique_id.1
   widgets:
     - command: napari-polcam.make_stokes_qwidget
-      display_name: Stokes QWidget
+      display_name: Stokes Estimation
+    - command: napari-polcam.make_stokes_qwidget2
+      display_name: Stokes QWidget2

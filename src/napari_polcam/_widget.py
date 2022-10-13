@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING
 
 #from qtpy.QtWidgets import QSpacerItem, QSizePolicy
 from qtpy.QtWidgets import (
-    QHBoxLayout,
+    QVBoxLayout,
     QWidget,
     QLineEdit,
     QPushButton,
@@ -28,7 +28,65 @@ if TYPE_CHECKING:
     import napari
 
         
-class StokesQWidget(QWidget):
+class StokesEstimation(QWidget):
+    # your QWidget.__init__ can optionally request the napari viewer instance
+    # in one of two ways:
+    # 1. use a parameter called `napari_viewer`, as done here
+    # 2. use a type annotation of 'napari.viewer.Viewer' for any parameter
+    def __init__(self, napari_viewer):
+        super().__init__()
+        self.viewer = napari_viewer
+        
+        btn_aolp = QPushButton("Calculate AoLP")
+        btn_aolp.clicked.connect(self._on_click_aolp)
+        
+        btn_dolp = QPushButton("Calculate DoLP")
+        btn_dolp.clicked.connect(self._on_click_dolp)
+        
+        pixsize_xy = QLineEdit()
+        pixsize_xy.setText("1.0")
+        pixsize_xy.textChanged.connect(self._on_value_change_pixsize)
+        
+        pixsize_z = QLineEdit()
+        pixsize_z.setText("1.0")
+        pixsize_z.textChanged.connect(self._on_value_change_pixsize)
+        
+        self.setLayout(QVBoxLayout())
+        self.layout().addWidget(pixsize_xy)
+        self.layout().addWidget(pixsize_z)
+        self.layout().addWidget(btn_aolp)
+        self.layout().addWidget(btn_dolp)
+        
+        self.lineEdit_scale_xy = pixsize_xy
+        self.lineEdit_scale_z = pixsize_z
+
+    def _on_value_change_pixsize(self):
+        value_xy = float(self.lineEdit_scale_xy.text())
+        value_z = float(self.lineEdit_scale_z.text())
+        for layer in self.viewer.layers:
+            layer.scale = [value_z, value_xy, value_xy]
+       
+    def _on_click_aolp(self):
+        s1 = self.viewer.layers['S1'].data
+        s2 = self.viewer.layers['S2'].data
+        AoLP = (1/2)*np.arctan(s2/s1)
+        self.viewer.add_image(AoLP,contrast_limits=[-np.pi/2,np.pi/2],\
+                              scale=(float(self.lineEdit_scale_z.text()),\
+                                     float(self.lineEdit_scale_xy.text()),\
+                                     float(self.lineEdit_scale_xy.text())))
+        
+    def _on_click_dolp(self):
+        s0 = self.viewer.layers['S0'].data
+        s1 = self.viewer.layers['S1'].data
+        s2 = self.viewer.layers['S2'].data
+        DoLP = np.sqrt((s1*s1 + s2*s2)/(s0*s0))
+        self.viewer.add_image(DoLP,contrast_limits=[0,1],\
+                              scale=(float(self.lineEdit_scale_z.text()),\
+                                     float(self.lineEdit_scale_xy.text()),\
+                                     float(self.lineEdit_scale_xy.text())))
+
+
+class StokesQWidget2(QWidget):
     # your QWidget.__init__ can optionally request the napari viewer instance
     # in one of two ways:
     # 1. use a parameter called `napari_viewer`, as done here
