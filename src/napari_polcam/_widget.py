@@ -19,6 +19,7 @@ from qtpy.QtWidgets import (
     QWidget,
     QLineEdit,
     QPushButton,
+    QLabel,
     )
 
 from qtpy.QtCore import Qt
@@ -36,26 +37,36 @@ class StokesEstimation(QWidget):
     def __init__(self, napari_viewer):
         super().__init__()
         self.viewer = napari_viewer
-        
+                
         btn_aolp = QPushButton("Calculate AoLP")
         btn_aolp.clicked.connect(self._on_click_aolp)
         
         btn_dolp = QPushButton("Calculate DoLP")
         btn_dolp.clicked.connect(self._on_click_dolp)
-        
+
         pixsize_xy = QLineEdit()
         pixsize_xy.setText("1.0")
         pixsize_xy.textChanged.connect(self._on_value_change_pixsize)
+
+        lbl_pixsize_xy = QLabel()
+        lbl_pixsize_xy.setText("Voxel size xy:")
+        lbl_pixsize_xy.setBuddy(pixsize_xy)
         
         pixsize_z = QLineEdit()
         pixsize_z.setText("1.0")
         pixsize_z.textChanged.connect(self._on_value_change_pixsize)
         
+        lbl_pixsize_z = QLabel()
+        lbl_pixsize_z.setText("Voxel size z:")
+        lbl_pixsize_z.setBuddy(pixsize_z)
+        
         self.setLayout(QVBoxLayout())
-        self.layout().addWidget(pixsize_xy)
-        self.layout().addWidget(pixsize_z)
         self.layout().addWidget(btn_aolp)
         self.layout().addWidget(btn_dolp)
+        self.layout().addWidget(lbl_pixsize_xy)
+        self.layout().addWidget(pixsize_xy)
+        self.layout().addWidget(lbl_pixsize_z)
+        self.layout().addWidget(pixsize_z)
         
         self.lineEdit_scale_xy = pixsize_xy
         self.lineEdit_scale_z = pixsize_z
@@ -97,10 +108,18 @@ class HSVmap(QWidget):
         pixsize_xy = QLineEdit()
         pixsize_xy.setText("1.0")
         pixsize_xy.textChanged.connect(self._on_value_change_pixsize)
+
+        lbl_pixsize_xy = QLabel()
+        lbl_pixsize_xy.setText("Voxel size xy:")
+        lbl_pixsize_xy.setBuddy(pixsize_xy)
         
         pixsize_z = QLineEdit()
         pixsize_z.setText("1.0")
         pixsize_z.textChanged.connect(self._on_value_change_pixsize)
+        
+        lbl_pixsize_z = QLabel()
+        lbl_pixsize_z.setText("Voxel size z:")
+        lbl_pixsize_z.setBuddy(pixsize_z)
         
         slider_dolp = QDoubleRangeSlider()
         slider_dolp.setOrientation(Qt.Horizontal)
@@ -108,6 +127,10 @@ class HSVmap(QWidget):
         slider_dolp.setMaximum(1)
         slider_dolp.setValue([0,1])
         slider_dolp.setSingleStep(0.001)
+        lbl_slider_dolp = QLabel()
+        lbl_slider_dolp.setText("DoLP threshold:")
+        lbl_slider_dolp.setAlignment(Qt.AlignCenter)
+        lbl_slider_dolp.setBuddy(slider_dolp)
         
         slider_s0 = QDoubleRangeSlider()
         slider_s0.setOrientation(Qt.Horizontal)
@@ -115,17 +138,26 @@ class HSVmap(QWidget):
         slider_s0.setMaximum(1)
         slider_s0.setValue([0,1])
         slider_s0.setSingleStep(0.01)
+        lbl_slider_s0 = QLabel()
+        lbl_slider_s0.setText("S0 threshold:")
+        lbl_slider_s0.setAlignment(Qt.AlignCenter)
+        lbl_slider_s0.setBuddy(slider_s0)
         
         btn_hsv_map = QPushButton("Calculate HSVmap")
         btn_hsv_map.clicked.connect(self._on_click_hsvmap)
         
         self.setLayout(QVBoxLayout())
-        self.layout().addWidget(pixsize_xy)
-        self.layout().addWidget(pixsize_z)
+        
         self.layout().addWidget(btn_hsv_map)
-
+        self.layout().addWidget(lbl_slider_dolp)
         self.layout().addWidget(slider_dolp)
+        self.layout().addWidget(lbl_slider_s0)
         self.layout().addWidget(slider_s0)
+        
+        self.layout().addWidget(lbl_pixsize_xy)
+        self.layout().addWidget(pixsize_xy)
+        self.layout().addWidget(lbl_pixsize_z)
+        self.layout().addWidget(pixsize_z)
         
         self.lineEdit_scale_xy = pixsize_xy
         self.lineEdit_scale_z = pixsize_z
