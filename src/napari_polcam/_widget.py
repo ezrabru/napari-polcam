@@ -16,7 +16,7 @@ from vispy.color import Colormap
 from typing import TYPE_CHECKING
 
 from magicgui import magic_factory
-from qtpy.QtWidgets import QHBoxLayout, QPushButton, QWidget
+from qtpy.QtWidgets import QHBoxLayout, QPushButton, QWidget, QSpinBox, QLineEdit
 
 if TYPE_CHECKING:
     import napari
@@ -30,6 +30,12 @@ class StokesQWidget(QWidget):
     def __init__(self, napari_viewer):
         super().__init__()
         self.viewer = napari_viewer
+        
+        pixsize_xy = QLineEdit()
+        pixsize_xy.textChanged.connect(self._on_value_change_pixsize)
+        
+        pixsize_z = QLineEdit()
+        pixsize_z.textChanged.connect(self._on_value_change_pixsize)
         
         #btn_s0 = QPushButton("Set S0")
         #btn_s0.clicked.connect(self._on_click_s0)
@@ -50,12 +56,24 @@ class StokesQWidget(QWidget):
         btn_hsv_map.clicked.connect(self._on_click_hsvmap)
         
         self.setLayout(QHBoxLayout())
+        self.layout().addWidget(pixsize_xy)
+        self.layout().addWidget(pixsize_z)
         #self.layout().addWidget(btn_s0)
         #self.layout().addWidget(btn_s1)
         #self.layout().addWidget(btn_s2)
         self.layout().addWidget(btn_aolp)
         self.layout().addWidget(btn_dolp)
         self.layout().addWidget(btn_hsv_map)
+        
+        self.lineEdit_scale_xy = pixsize_xy
+        self.lineEdit_scale_z = pixsize_z
+
+    def _on_value_change_pixsize(self):
+        value_xy = float(self.lineEdit_scale_xy.text())
+        value_z = float(self.lineEdit_scale_z.text())
+        for layer in self.viewer.layers:
+            layer.scale = [value_z, value_xy, value_xy]
+
 
     def _on_click_s0(self):
         num_layers = 0
