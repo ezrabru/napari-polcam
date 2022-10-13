@@ -20,6 +20,9 @@ contributions:
     - id: napari-polcam.make_hsvmap_qwidget
       python_name: napari_polcam._widget:HSVmap
       title: Make HSVmap QWidget
+    - id: napari-polcam.make_dolpmap_qwidget
+      python_name: napari_polcam._widget:DoLPmap
+      title: Make DoLPmap QWidget
   readers:
     - command: napari-polcam.get_reader
       accepts_directories: false
@@ -40,3 +43,5 @@ contributions:
       display_name: Stokes Estimation
     - command: napari-polcam.make_hsvmap_qwidget
       display_name: Generate HSVmap
+    - command: napari-polcam.make_dolpmap_qwidget
+      display_name: Generate DoLPmap
