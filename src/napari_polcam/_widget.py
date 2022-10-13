@@ -102,12 +102,6 @@ class HSVmap(QWidget):
         pixsize_z.setText("1.0")
         pixsize_z.textChanged.connect(self._on_value_change_pixsize)
         
-        btn_aolp = QPushButton("Calculate AoLP")
-        btn_aolp.clicked.connect(self._on_click_aolp)
-        
-        btn_dolp = QPushButton("Calculate DoLP")
-        btn_dolp.clicked.connect(self._on_click_dolp)
-        
         slider_dolp = QDoubleRangeSlider()
         slider_dolp.setOrientation(Qt.Horizontal)
         slider_dolp.setMinimum(0)
@@ -128,8 +122,6 @@ class HSVmap(QWidget):
         self.setLayout(QVBoxLayout())
         self.layout().addWidget(pixsize_xy)
         self.layout().addWidget(pixsize_z)
-        self.layout().addWidget(btn_aolp)
-        self.layout().addWidget(btn_dolp)
         self.layout().addWidget(btn_hsv_map)
 
         self.layout().addWidget(slider_dolp)
@@ -144,26 +136,30 @@ class HSVmap(QWidget):
         for layer in self.viewer.layers:
             layer.scale = [value_z, value_xy, value_xy]
        
-    def _on_click_aolp(self):
+    #def _on_click_prepare_hsvmap(self):
+    #    # generate 8-bit versions of AoLP and DoLP for faster processing
+    
+    def _on_click_hsvmap(self):
+        
+        # get Stokes parameter images (assumed to be already open)
+        s0 = self.viewer.layers['S0'].data
         s1 = self.viewer.layers['S1'].data
         s2 = self.viewer.layers['S2'].data
+        
+        # calculate AoLP (SHOULD CHECK IF ALREADY OPEN)
         AoLP = (1/2)*np.arctan(s2/s1)
         self.viewer.add_image(AoLP,contrast_limits=[-np.pi/2,np.pi/2],\
                               scale=(float(self.lineEdit_scale_z.text()),\
                                      float(self.lineEdit_scale_xy.text()),\
                                      float(self.lineEdit_scale_xy.text())))
         
-    def _on_click_dolp(self):
-        s0 = self.viewer.layers['S0'].data
-        s1 = self.viewer.layers['S1'].data
-        s2 = self.viewer.layers['S2'].data
+        # calculate DoLP (SHOULD CHECK IF ALREADY OPEN)
         DoLP = np.sqrt((s1*s1 + s2*s2)/(s0*s0))
         self.viewer.add_image(DoLP,contrast_limits=[0,1],\
                               scale=(float(self.lineEdit_scale_z.text()),\
                                      float(self.lineEdit_scale_xy.text()),\
                                      float(self.lineEdit_scale_xy.text())))
-    
-    def _on_click_hsvmap(self):
+            
         h = self.viewer.layers['AoLP'].data
         s = self.viewer.layers['DoLP'].data
         v = self.viewer.layers['S0'].data
