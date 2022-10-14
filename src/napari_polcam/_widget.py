@@ -24,6 +24,7 @@ from qtpy.QtWidgets import (
     QPushButton,
     QLabel,
     QSpinBox,
+    QComboBox,    
     )
 
 from qtpy.QtCore import Qt
@@ -32,64 +33,67 @@ from superqt import QDoubleRangeSlider
 if TYPE_CHECKING:
     import napari
 
-
-class SetVoxelSize(QWidget):
-    
-    def __init__(self, napari_viewer):
-        super().__init__()
-        self.viewer = napari_viewer
-        
-        pixsize_xy = QLineEdit()
-        pixsize_xy.setText("1.0")
-        pixsize_xy.textChanged.connect(self._on_value_change_pixsize)
-        
-        lbl_pixsize_xy = QLabel()
-        lbl_pixsize_xy.setText("Voxel size xy:")
-        lbl_pixsize_xy.setBuddy(pixsize_xy)
-        
-        pixsize_z = QLineEdit()
-        pixsize_z.setText("1.0")
-        pixsize_z.textChanged.connect(self._on_value_change_pixsize)
-        
-        lbl_pixsize_z = QLabel()
-        lbl_pixsize_z.setText("Voxel size z:")
-        lbl_pixsize_z.setBuddy(pixsize_z)
-        
-        self.setLayout(QVBoxLayout())
-        self.layout().addWidget(lbl_pixsize_xy)
-        self.layout().addWidget(pixsize_xy)
-        self.layout().addWidget(lbl_pixsize_z)
-        self.layout().addWidget(pixsize_z)
-        
-        self.lineEdit_scale_xy = pixsize_xy
-        self.lineEdit_scale_z = pixsize_z
-
-    def _on_value_change_pixsize(self):
-        value_xy = float(self.lineEdit_scale_xy.text())
-        value_z = float(self.lineEdit_scale_z.text())
-        for layer in self.viewer.layers:
-            if len(layer.data.shape) > 2: # if the data has x,y,z dimensions
-                layer.scale = [value_z, value_xy, value_xy]
-            else: # if the data has no z dimension
-                layer.scale = [value_xy, value_xy]
-
-
 class StokesEstimation(QWidget):
     
     def __init__(self, napari_viewer):
         super().__init__()
         self.viewer = napari_viewer
-                
-        btn_aolp = QPushButton("Calculate AoLP")
-        btn_aolp.clicked.connect(self._on_click_aolp)
+
+        polariser_unit = QWidget()
+        polariser_unit.setLayout(QHBoxLayout())
+        polariser_unit.setMaximumHeight(40)
+        lbl_unit = QLabel("Polariser unit: ")
+        polariser_unit.layout().addWidget(lbl_unit)
+        dropdown_unit = QComboBox()
+        dropdown_unit.addItem("[-45 0; 90 45]")
+        dropdown_unit.addItem("[0 -45; 45 90]")
+        dropdown_unit.addItem("[90 45; -45 0]")
+        dropdown_unit.addItem("[45 90; 0 -45]")
+        polariser_unit.layout().addWidget(dropdown_unit)
+        polariser_unit.layout().setSpacing(0)
+
+        method_choice = QWidget()
+        method_choice.setLayout(QHBoxLayout())
+        lbl_method = QLabel("Method: ")
+        method_choice.layout().addWidget(lbl_method)
+        dropdown_method = QComboBox()
+        dropdown_method.addItem("Cubic sline interpolation")
+        dropdown_method.addItem("Fourier")
+        dropdown_method.addItem("Cubic interpolation")
+        dropdown_method.addItem("Linear interpolation")
+        dropdown_method.addItem("None")
+        method_choice.layout().addWidget(dropdown_method)
+        method_choice.layout().setSpacing(0)
+
+        btn_stokes = QPushButton("Calculate Stokes parameters")
+        btn_stokes.clicked.connect(self._on_click_stokes)
         
+        
+        # A container for AoLP and DoLP buttons
+        btn_aolp_dolp = QWidget()
+        btn_aolp_dolp.setLayout(QHBoxLayout())
+        btn_aolp = QPushButton("Calculate AoLP")
         btn_dolp = QPushButton("Calculate DoLP")
+        btn_aolp.clicked.connect(self._on_click_aolp)        
         btn_dolp.clicked.connect(self._on_click_dolp)
+        btn_aolp_dolp.layout().addWidget(btn_aolp)
+        btn_aolp_dolp.layout().addWidget(btn_dolp)
         
         self.setLayout(QVBoxLayout())
-        self.layout().addWidget(btn_aolp)
-        self.layout().addWidget(btn_dolp)
-       
+        self.layout().setSpacing(0)
+
+        self.layout().addWidget(polariser_unit)        
+        self.layout().addWidget(method_choice)
+        self.layout().addWidget(btn_stokes)
+        self.layout().addWidget(btn_aolp_dolp)
+
+    def _on_click_stokes(self):
+        show_info("Estimate Stokes placeholder.")
+        #max_s0 = np.max(S0)
+        #self.viewer.add_image(S0,contrast_limits=[0, max_s0])        
+        #self.viewer.add_image(S1,contrast_limits=[-max_s0, max_s0])        
+        #self.viewer.add_image(S2,contrast_limits=[-max_s0, max_s0])        
+
     def _on_click_aolp(self):
         s1 = self.viewer.layers['S1'].data
         s2 = self.viewer.layers['S2'].data
@@ -403,3 +407,43 @@ class DoLPmap(QWidget):
             if isinstance(layer, napari.layers.Image)
         ]
 
+
+class SetVoxelSize(QWidget):
+    
+    def __init__(self, napari_viewer):
+        super().__init__()
+        self.viewer = napari_viewer
+        
+        pixsize_xy = QLineEdit()
+        pixsize_xy.setText("1.0")
+        pixsize_xy.textChanged.connect(self._on_value_change_pixsize)
+        
+        lbl_pixsize_xy = QLabel()
+        lbl_pixsize_xy.setText("Voxel size xy:")
+        lbl_pixsize_xy.setBuddy(pixsize_xy)
+        
+        pixsize_z = QLineEdit()
+        pixsize_z.setText("1.0")
+        pixsize_z.textChanged.connect(self._on_value_change_pixsize)
+        
+        lbl_pixsize_z = QLabel()
+        lbl_pixsize_z.setText("Voxel size z:")
+        lbl_pixsize_z.setBuddy(pixsize_z)
+        
+        self.setLayout(QVBoxLayout())
+        self.layout().addWidget(lbl_pixsize_xy)
+        self.layout().addWidget(pixsize_xy)
+        self.layout().addWidget(lbl_pixsize_z)
+        self.layout().addWidget(pixsize_z)
+        
+        self.lineEdit_scale_xy = pixsize_xy
+        self.lineEdit_scale_z = pixsize_z
+
+    def _on_value_change_pixsize(self):
+        value_xy = float(self.lineEdit_scale_xy.text())
+        value_z = float(self.lineEdit_scale_z.text())
+        for layer in self.viewer.layers:
+            if len(layer.data.shape) > 2: # if the data has x,y,z dimensions
+                layer.scale = [value_z, value_xy, value_xy]
+            else: # if the data has no z dimension
+                layer.scale = [value_xy, value_xy]
