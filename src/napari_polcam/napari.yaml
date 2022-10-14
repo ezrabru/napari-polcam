@@ -23,6 +23,9 @@ contributions:
     - id: napari-polcam.make_dolpmap_qwidget
       python_name: napari_polcam._widget:DoLPmap
       title: Make DoLPmap QWidget
+    - id: napari-polcam.make_voxelsize_qwidget
+      python_name: napari_polcam._widget:SetVoxelSize
+      title: Make Set Voxel Size QWidget
   readers:
     - command: napari-polcam.get_reader
       accepts_directories: false
@@ -45,3 +48,5 @@ contributions:
       display_name: Generate HSVmap
     - command: napari-polcam.make_dolpmap_qwidget
       display_name: Generate DoLPmap
+    - command: napari-polcam.make_voxelsize_qwidget
+      display_name: Set Voxel Size

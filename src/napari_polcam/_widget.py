@@ -33,25 +33,16 @@ if TYPE_CHECKING:
     import napari
 
 
-class StokesEstimation(QWidget):
-    # your QWidget.__init__ can optionally request the napari viewer instance
-    # in one of two ways:
-    # 1. use a parameter called `napari_viewer`, as done here
-    # 2. use a type annotation of 'napari.viewer.Viewer' for any parameter
+class SetVoxelSize(QWidget):
+    
     def __init__(self, napari_viewer):
         super().__init__()
         self.viewer = napari_viewer
-                
-        btn_aolp = QPushButton("Calculate AoLP")
-        btn_aolp.clicked.connect(self._on_click_aolp)
         
-        btn_dolp = QPushButton("Calculate DoLP")
-        btn_dolp.clicked.connect(self._on_click_dolp)
-
         pixsize_xy = QLineEdit()
         pixsize_xy.setText("1.0")
         pixsize_xy.textChanged.connect(self._on_value_change_pixsize)
-
+        
         lbl_pixsize_xy = QLabel()
         lbl_pixsize_xy.setText("Voxel size xy:")
         lbl_pixsize_xy.setBuddy(pixsize_xy)
@@ -65,8 +56,6 @@ class StokesEstimation(QWidget):
         lbl_pixsize_z.setBuddy(pixsize_z)
         
         self.setLayout(QVBoxLayout())
-        self.layout().addWidget(btn_aolp)
-        self.layout().addWidget(btn_dolp)
         self.layout().addWidget(lbl_pixsize_xy)
         self.layout().addWidget(pixsize_xy)
         self.layout().addWidget(lbl_pixsize_z)
@@ -80,25 +69,38 @@ class StokesEstimation(QWidget):
         value_z = float(self.lineEdit_scale_z.text())
         for layer in self.viewer.layers:
             layer.scale = [value_z, value_xy, value_xy]
+
+
+
+class StokesEstimation(QWidget):
+    
+    def __init__(self, napari_viewer):
+        super().__init__()
+        self.viewer = napari_viewer
+                
+        btn_aolp = QPushButton("Calculate AoLP")
+        btn_aolp.clicked.connect(self._on_click_aolp)
+        
+        btn_dolp = QPushButton("Calculate DoLP")
+        btn_dolp.clicked.connect(self._on_click_dolp)
+        
+        self.setLayout(QVBoxLayout())
+        self.layout().addWidget(btn_aolp)
+        self.layout().addWidget(btn_dolp)
        
     def _on_click_aolp(self):
         s1 = self.viewer.layers['S1'].data
         s2 = self.viewer.layers['S2'].data
         AoLP = (1/2)*np.arctan(s2/s1)
-        self.viewer.add_image(AoLP,contrast_limits=[-np.pi/2,np.pi/2],\
-                              scale=(float(self.lineEdit_scale_z.text()),\
-                                     float(self.lineEdit_scale_xy.text()),\
-                                     float(self.lineEdit_scale_xy.text())))
+        self.viewer.add_image(AoLP,contrast_limits=[-np.pi/2,np.pi/2])
         
     def _on_click_dolp(self):
         s0 = self.viewer.layers['S0'].data
         s1 = self.viewer.layers['S1'].data
         s2 = self.viewer.layers['S2'].data
         DoLP = np.sqrt((s1*s1 + s2*s2)/(s0*s0))
-        self.viewer.add_image(DoLP,contrast_limits=[0,1],\
-                              scale=(float(self.lineEdit_scale_z.text()),\
-                                     float(self.lineEdit_scale_xy.text()),\
-                                     float(self.lineEdit_scale_xy.text())))
+        self.viewer.add_image(DoLP,contrast_limits=[0,1])
+
 
 class HSVmap(QWidget):
     def __init__(self, napari_viewer):
@@ -129,22 +131,6 @@ class HSVmap(QWidget):
             graph_container_dolp_hist.setMaximumHeight(100)
             graph_container_dolp_hist.setLayout(QVBoxLayout())
             graph_container_dolp_hist.layout().addWidget(self.dolp_hist_widget)
-            
-            # Lateral pixel size
-            pixsize_xy = QLineEdit()
-            pixsize_xy.setText("1.0")
-            pixsize_xy.textChanged.connect(self._on_value_change_pixsize)
-            lbl_pixsize_xy = QLabel()
-            lbl_pixsize_xy.setText("Voxel size xy:")
-            lbl_pixsize_xy.setBuddy(pixsize_xy)
-            
-            # Axial pixel size
-            pixsize_z = QLineEdit()
-            pixsize_z.setText("1.0")
-            pixsize_z.textChanged.connect(self._on_value_change_pixsize)
-            lbl_pixsize_z = QLabel()
-            lbl_pixsize_z.setText("Voxel size z:")
-            lbl_pixsize_z.setBuddy(pixsize_z)
             
             # DoLP threshold slider
             slider_dolp = QDoubleRangeSlider()
@@ -197,18 +183,9 @@ class HSVmap(QWidget):
             self.layout().addItem(verticalSpacer)
             self.layout().setSpacing(0)
             
-            self.layout().addWidget(lbl_pixsize_xy)
-            self.layout().addWidget(pixsize_xy)
-            self.layout().addWidget(lbl_pixsize_z)
-            self.layout().addWidget(pixsize_z)
-            
-            self.lineEdit_scale_xy = pixsize_xy
-            self.lineEdit_scale_z = pixsize_z
-            
             verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
             self.layout().addItem(verticalSpacer)
             self.layout().setSpacing(0)
-        
         
     def draw_s0_histogram(self):
         # add a new plot to the s0_hist_widget or empty the old plot
@@ -337,23 +314,7 @@ class DoLPmap(QWidget):
     def __init__(self, napari_viewer):
         super().__init__()
         self.viewer = napari_viewer
-        
-        pixsize_xy = QLineEdit()
-        pixsize_xy.setText("1.0")
-        pixsize_xy.textChanged.connect(self._on_value_change_pixsize)
-
-        lbl_pixsize_xy = QLabel()
-        lbl_pixsize_xy.setText("Voxel size xy:")
-        lbl_pixsize_xy.setBuddy(pixsize_xy)
-        
-        pixsize_z = QLineEdit()
-        pixsize_z.setText("1.0")
-        pixsize_z.textChanged.connect(self._on_value_change_pixsize)
-        
-        lbl_pixsize_z = QLabel()
-        lbl_pixsize_z.setText("Voxel size z:")
-        lbl_pixsize_z.setBuddy(pixsize_z)
-        
+                
         slider_dolp = QDoubleRangeSlider()
         slider_dolp.setOrientation(Qt.Horizontal)
         slider_dolp.setMinimum(0)
@@ -386,20 +347,6 @@ class DoLPmap(QWidget):
         self.layout().addWidget(slider_dolp)
         self.layout().addWidget(lbl_slider_s0)
         self.layout().addWidget(slider_s0)
-        
-        self.layout().addWidget(lbl_pixsize_xy)
-        self.layout().addWidget(pixsize_xy)
-        self.layout().addWidget(lbl_pixsize_z)
-        self.layout().addWidget(pixsize_z)
-        
-        self.lineEdit_scale_xy = pixsize_xy
-        self.lineEdit_scale_z = pixsize_z
-
-    def _on_value_change_pixsize(self):
-        value_xy = float(self.lineEdit_scale_xy.text())
-        value_z = float(self.lineEdit_scale_z.text())
-        for layer in self.viewer.layers:
-            layer.scale = [value_z, value_xy, value_xy]
        
     #def _on_click_prepare_hsvmap(self):
     #    # generate 8-bit versions of AoLP and DoLP for faster processing
@@ -413,17 +360,11 @@ class DoLPmap(QWidget):
         
         # calculate AoLP (SHOULD CHECK IF ALREADY OPEN)
         AoLP = (1/2)*np.arctan(s2/s1)
-        self.viewer.add_image(AoLP,contrast_limits=[-np.pi/2,np.pi/2],\
-                              scale=(float(self.lineEdit_scale_z.text()),\
-                                     float(self.lineEdit_scale_xy.text()),\
-                                     float(self.lineEdit_scale_xy.text())))
+        self.viewer.add_image(AoLP,contrast_limits=[-np.pi/2,np.pi/2])
         
         # calculate DoLP (SHOULD CHECK IF ALREADY OPEN)
         DoLP = np.sqrt((s1*s1 + s2*s2)/(s0*s0))
-        self.viewer.add_image(DoLP,contrast_limits=[0,1],\
-                              scale=(float(self.lineEdit_scale_z.text()),\
-                                     float(self.lineEdit_scale_xy.text()),\
-                                     float(self.lineEdit_scale_xy.text())))
+        self.viewer.add_image(DoLP,contrast_limits=[0,1])
             
         h = self.viewer.layers['AoLP'].data
         s = self.viewer.layers['DoLP'].data
@@ -449,19 +390,9 @@ class DoLPmap(QWidget):
             layer.visible = False
         
         # add new images for the 3 colour channels
-        self.viewer.add_image(hsv_r,contrast_limits=[0,255],colormap="red",blending="additive",\
-                              scale=(float(self.lineEdit_scale_z.text()),\
-                                     float(self.lineEdit_scale_xy.text()),\
-                                     float(self.lineEdit_scale_xy.text())))
-        self.viewer.add_image(hsv_g,contrast_limits=[0,255],colormap="green",blending="additive",\
-                              scale=(float(self.lineEdit_scale_z.text()),\
-                                     float(self.lineEdit_scale_xy.text()),\
-                                     float(self.lineEdit_scale_xy.text())))
-        self.viewer.add_image(hsv_b,contrast_limits=[0,255],colormap="blue",blending="additive",\
-                              scale=(float(self.lineEdit_scale_z.text()),\
-                                     float(self.lineEdit_scale_xy.text()),\
-                                     float(self.lineEdit_scale_xy.text())))
-        self._on_value_change_pixsize # adjust the voxel scaling
+        self.viewer.add_image(hsv_r,contrast_limits=[0,255],colormap="red",blending="additive")
+        self.viewer.add_image(hsv_g,contrast_limits=[0,255],colormap="green",blending="additive")
+        self.viewer.add_image(hsv_b,contrast_limits=[0,255],colormap="blue",blending="additive")
         
     def selected_image_layers(self):
         return [
