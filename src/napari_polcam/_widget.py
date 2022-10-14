@@ -68,8 +68,10 @@ class SetVoxelSize(QWidget):
         value_xy = float(self.lineEdit_scale_xy.text())
         value_z = float(self.lineEdit_scale_z.text())
         for layer in self.viewer.layers:
-            layer.scale = [value_z, value_xy, value_xy]
-
+            if len(layer.data.shape) > 2: # if the data has x,y,z dimensions
+                layer.scale = [value_z, value_xy, value_xy]
+            else: # if the data has no z dimension
+                layer.scale = [value_xy, value_xy]
 
 
 class StokesEstimation(QWidget):
