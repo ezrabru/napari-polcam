@@ -8,6 +8,7 @@ Replace code below according to your needs.
 """
 import numpy as np
 import napari
+from napari.utils.notifications import show_info
 import pyqtgraph as pg
 
 from matplotlib.colors import hsv_to_rgb
@@ -110,8 +111,7 @@ class HSVmap(QWidget):
         
         # check if S0, S1 and S2 are open
         if not (self.check_if_s0_is_loaded() and self.check_if_s1_is_loaded() and self.check_if_s2_is_loaded()):
-            lbl_no_s_loaded = QLabel()
-            lbl_no_s_loaded.setText("No Stokes parameters are loaded. Load S0, S1 and S2 before using 'Generate HSVmap'.")
+            show_info("No Stokes parameters are loaded. Load S0, S1 and S2 before using 'Generate HSVmap'.")
         else:
             if not self.check_if_dolp_is_loaded():
                 self.calculate_dolp()
