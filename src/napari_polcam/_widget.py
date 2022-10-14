@@ -101,10 +101,6 @@ class StokesEstimation(QWidget):
                                      float(self.lineEdit_scale_xy.text())))
 
 class HSVmap(QWidget):
-    # your QWidget.__init__ can optionally request the napari viewer instance
-    # in one of two ways:
-    # 1. use a parameter called `napari_viewer`, as done here
-    # 2. use a type annotation of 'napari.viewer.Viewer' for any parameter
     def __init__(self, napari_viewer):
         super().__init__()
         self.viewer = napari_viewer
@@ -286,30 +282,12 @@ class HSVmap(QWidget):
     
     def _on_click_hsvmap(self):
         
-        # get Stokes parameter images (assumed to be already open)
-        s0 = self.viewer.layers['S0'].data
-        s1 = self.viewer.layers['S1'].data
-        s2 = self.viewer.layers['S2'].data
-        
-        # calculate AoLP (SHOULD CHECK IF ALREADY OPEN)
-        AoLP = (1/2)*np.arctan(s2/s1)
-        self.viewer.add_image(AoLP,contrast_limits=[-np.pi/2,np.pi/2],\
-                              scale=(float(self.lineEdit_scale_z.text()),\
-                                     float(self.lineEdit_scale_xy.text()),\
-                                     float(self.lineEdit_scale_xy.text())))
-        
-        # calculate DoLP (SHOULD CHECK IF ALREADY OPEN)
-        DoLP = np.sqrt((s1*s1 + s2*s2)/(s0*s0))
-        self.viewer.add_image(DoLP,contrast_limits=[0,1],\
-                              scale=(float(self.lineEdit_scale_z.text()),\
-                                     float(self.lineEdit_scale_xy.text()),\
-                                     float(self.lineEdit_scale_xy.text())))
-            
         h = self.viewer.layers['AoLP'].data
         s = self.viewer.layers['DoLP'].data
         v = self.viewer.layers['S0'].data
         
-        h = (h + np.pi/2)/np.pi; # rescale [-pi/2, pi/2]to [0, 1]
+        # scale parameters
+        h = (h + np.pi/2)/np.pi; # rescale [-pi/2, pi/2] to [0, 1]
         v = (v - np.min(v))/(np.max(v) - np.min(v)); # rescale intensity to [0 1]
         
         numDim = len(h.shape) # number of dimensions of the dataset
@@ -319,35 +297,27 @@ class HSVmap(QWidget):
         hsv_r = rgb[..., 0]*255
         hsv_g = rgb[..., 1]*255
         hsv_b = rgb[..., 2]*255
-        
-        hsv_r = hsv_r.astype(np.uint8)
-        hsv_g = hsv_g.astype(np.uint8)
-        hsv_b = hsv_b.astype(np.uint8)
-        
-        # hide all layers
-        #for layer in self.viewer.layers.selection:
-        #    layer.selected = False
-        
+                
         # add new images for the 3 colour channels
-        self.viewer.add_image(hsv_r,contrast_limits=[0,255],colormap="red",blending="additive",\
-                              scale=(float(self.lineEdit_scale_z.text()),\
-                                     float(self.lineEdit_scale_xy.text()),\
-                                     float(self.lineEdit_scale_xy.text())))
-        self.viewer.add_image(hsv_g,contrast_limits=[0,255],colormap="green",blending="additive",\
-                              scale=(float(self.lineEdit_scale_z.text()),\
-                                     float(self.lineEdit_scale_xy.text()),\
-                                     float(self.lineEdit_scale_xy.text())))
-        self.viewer.add_image(hsv_b,contrast_limits=[0,255],colormap="blue",blending="additive",\
-                              scale=(float(self.lineEdit_scale_z.text()),\
-                                     float(self.lineEdit_scale_xy.text()),\
-                                     float(self.lineEdit_scale_xy.text())))
+        if 'HSVmap_R' in self.viewer.layers:
+            self.viewer.layers['HSVmap_R'].data = hsv_r.astype(np.uint8)
+        else:
+            self.viewer.add_image(hsv_r.astype(np.uint8),contrast_limits=[0,255],colormap="red",blending="additive",name="HSVmap_R")
+    
+        if 'HSVmap_G' in self.viewer.layers:
+            self.viewer.layers['HSVmap_G'].data = hsv_g.astype(np.uint8)
+        else:
+            self.viewer.add_image(hsv_g.astype(np.uint8),contrast_limits=[0,255],colormap="green",blending="additive",name="HSVmap_G")
+        
+        if 'HSVmap_B' in self.viewer.layers:
+            self.viewer.layers['HSVmap_B'].data = hsv_b.astype(np.uint8)
+        else:
+            self.viewer.add_image(hsv_b.astype(np.uint8),contrast_limits=[0,255],colormap="blue",blending="additive",name="HSVmap_B")
+        
         self._on_value_change_pixsize # adjust the voxel scaling
 
 class DoLPmap(QWidget):
-    # your QWidget.__init__ can optionally request the napari viewer instance
-    # in one of two ways:
-    # 1. use a parameter called `napari_viewer`, as done here
-    # 2. use a type annotation of 'napari.viewer.Viewer' for any parameter
+
     def __init__(self, napari_viewer):
         super().__init__()
         self.viewer = napari_viewer
@@ -459,8 +429,8 @@ class DoLPmap(QWidget):
         hsv_b = hsv_b.astype(np.uint8)
         
         # hide all layers
-        #for layer in self.viewer.layers.selection:
-        #    layer.selected = False
+        for layer in self.viewer.layers.selection:
+            layer.visible = False
         
         # add new images for the 3 colour channels
         self.viewer.add_image(hsv_r,contrast_limits=[0,255],colormap="red",blending="additive",\
