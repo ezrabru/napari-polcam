@@ -8,18 +8,21 @@ Replace code below according to your needs.
 """
 import numpy as np
 import napari
+import pyqtgraph as pg
 
 from matplotlib.colors import hsv_to_rgb
 
 from typing import TYPE_CHECKING
 
-#from qtpy.QtWidgets import QSpacerItem, QSizePolicy
+from qtpy.QtWidgets import QSpacerItem, QSizePolicy
 from qtpy.QtWidgets import (
     QVBoxLayout,
+    QHBoxLayout,
     QWidget,
     QLineEdit,
     QPushButton,
     QLabel,
+    QSpinBox,
     )
 
 from qtpy.QtCore import Qt
@@ -28,7 +31,7 @@ from superqt import QDoubleRangeSlider
 if TYPE_CHECKING:
     import napari
 
-        
+
 class StokesEstimation(QWidget):
     # your QWidget.__init__ can optionally request the napari viewer instance
     # in one of two ways:
@@ -105,6 +108,35 @@ class HSVmap(QWidget):
         super().__init__()
         self.viewer = napari_viewer
         
+        # A container for histogram plot
+        graph_container = QWidget()
+        
+        # histogram view
+        self.graphics_widget = pg.GraphicsLayoutWidget()
+        self.graphics_widget.setBackground(None)
+        graph_container.setMaximumHeight(100)
+        graph_container.setLayout(QHBoxLayout())
+        graph_container.layout().addWidget(self.graphics_widget)
+        
+        # min / max of all
+        self.label_minimum = QLabel()
+        self.label_maximum = QLabel()
+        self.label_maximum.setAlignment(Qt.AlignRight)
+        min_max_widget = QWidget()
+        min_max_widget.setLayout(QHBoxLayout())
+        min_max_widget.layout().addWidget(self.label_minimum)
+        min_max_widget.layout().addWidget(self.label_maximum)
+        
+        # individual layers: min/max sliders
+        self.sliders = QWidget()
+        self.sliders.setLayout(QVBoxLayout())
+        self.sliders.layout().setSpacing(0)
+        
+
+        
+
+        
+        
         pixsize_xy = QLineEdit()
         pixsize_xy.setText("1.0")
         pixsize_xy.textChanged.connect(self._on_value_change_pixsize)
@@ -148,6 +180,9 @@ class HSVmap(QWidget):
         
         self.setLayout(QVBoxLayout())
         
+        self.layout().addWidget(graph_container)
+        self.layout().addWidget(min_max_widget)
+        
         self.layout().addWidget(btn_hsv_map)
         self.layout().addWidget(lbl_slider_dolp)
         self.layout().addWidget(slider_dolp)
@@ -161,7 +196,25 @@ class HSVmap(QWidget):
         
         self.lineEdit_scale_xy = pixsize_xy
         self.lineEdit_scale_z = pixsize_z
-
+        
+        verticalSpacer = QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding)
+        self.layout().addItem(verticalSpacer)
+        self.layout().setSpacing(0)
+        
+        self.draw_histogram()
+    
+    def draw_histogram(self):
+        # add a new plot to the graphics_widget or empty the old plot
+        if not hasattr(self, "plot"):
+            self.plot = self.graphics_widget.addPlot()
+        else:
+            self.plot.clear()
+            
+        # draw DoLP histogram
+        counts, binedges = np.histogram(self.viewer.layers['DoLP'].data,bins=100,range=(0.0,1.0))
+        self.plot.plot(binedges[0:-1],counts/np.max(counts),name='DoLP')
+        
+    
     def _on_value_change_pixsize(self):
         value_xy = float(self.lineEdit_scale_xy.text())
         value_z = float(self.lineEdit_scale_z.text())
