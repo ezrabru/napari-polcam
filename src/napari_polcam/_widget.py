@@ -7,10 +7,8 @@ see: https://napari.org/stable/plugins/guides.html?#widgets
 Replace code below according to your needs.
 """
 import numpy as np
-import napari
 from napari.utils.notifications import show_info
 from napari.utils import progress
-from time import sleep
 import pyqtgraph as pg
 
 from matplotlib.colors import hsv_to_rgb
