@@ -9,6 +9,8 @@ Replace code below according to your needs.
 import numpy as np
 import napari
 from napari.utils.notifications import show_info
+from napari.utils import progress
+from time import sleep
 import pyqtgraph as pg
 
 from matplotlib.colors import hsv_to_rgb
@@ -282,39 +284,55 @@ class HSVmap(QWidget):
     
     def _on_click_hsvmap(self):
         
-        h = self.viewer.layers['AoLP'].data
-        s = self.viewer.layers['DoLP'].data
-        v = self.viewer.layers['S0'].data
+        pbr = progress(total=10)
+        pbr.set_description("Calculating HSVmap...")
+        pbr.update(1)
+                
+        h = self.viewer.layers['AoLP'].data # hue
+        s = self.viewer.layers['DoLP'].data # saturation
+        v = self.viewer.layers['S0'].data # value
         
         # scale parameters
         h = (h + np.pi/2)/np.pi; # rescale [-pi/2, pi/2] to [0, 1]
         v = (v - np.min(v))/(np.max(v) - np.min(v)); # rescale intensity to [0 1]
         
         numDim = len(h.shape) # number of dimensions of the dataset
-        hsv = np.stack([h,s,v],numDim) # stack
-        rgb = hsv_to_rgb(hsv)
+        hsv = np.stack([h,s,v],numDim) # stack the h, s and v channels along a new dimension
+        rgb = hsv_to_rgb(hsv) # convert hsv colourspace to rgb colourspace
         
+        # scale to 8-bit colour (0-255)
         hsv_r = rgb[..., 0]*255
         hsv_g = rgb[..., 1]*255
         hsv_b = rgb[..., 2]*255
-                
-        # add new images for the 3 colour channels
-        if 'HSVmap_R' in self.viewer.layers:
-            self.viewer.layers['HSVmap_R'].data = hsv_r.astype(np.uint8)
-        else:
-            self.viewer.add_image(hsv_r.astype(np.uint8),contrast_limits=[0,255],colormap="red",blending="additive",name="HSVmap_R")
-    
-        if 'HSVmap_G' in self.viewer.layers:
-            self.viewer.layers['HSVmap_G'].data = hsv_g.astype(np.uint8)
-        else:
-            self.viewer.add_image(hsv_g.astype(np.uint8),contrast_limits=[0,255],colormap="green",blending="additive",name="HSVmap_G")
         
+        pbr.set_description("Updating layers...")
+        pbr.update(1)
+        
+        # add new images for the 3 colour channels: HSVmap_R, HSVmap_G and HSVmap_B
+        if 'HSVmap_R' in self.viewer.layers:
+            # if layer with the name 'HSVmap_R' is already open, replace the data in it
+            self.viewer.layers['HSVmap_R'].data = hsv_r.astype(np.uint8)
+        else: # if no layer with the name 'HSVmap_R' exists, make it
+            self.viewer.add_image(hsv_r.astype(np.uint8),contrast_limits=[0,255],\
+                                  colormap="red",blending="additive",name="HSVmap_R")
+        if 'HSVmap_G' in self.viewer.layers:
+            # if layer with the name 'HSVmap_G' is already open, replace the data in it
+            self.viewer.layers['HSVmap_G'].data = hsv_g.astype(np.uint8)
+        else: # if no layer with the name 'HSVmap_G' exists, make it
+            self.viewer.add_image(hsv_g.astype(np.uint8),contrast_limits=[0,255],\
+                                  colormap="green",blending="additive",name="HSVmap_G")
         if 'HSVmap_B' in self.viewer.layers:
+            # if layer with the name 'HSVmap_B' is already open, replace the data in it
             self.viewer.layers['HSVmap_B'].data = hsv_b.astype(np.uint8)
-        else:
-            self.viewer.add_image(hsv_b.astype(np.uint8),contrast_limits=[0,255],colormap="blue",blending="additive",name="HSVmap_B")
+        else: # if no layer with the name 'HSVmap_B' exists, make it
+            self.viewer.add_image(hsv_b.astype(np.uint8),contrast_limits=[0,255],\
+                                  colormap="blue",blending="additive",name="HSVmap_B")
         
         self._on_value_change_pixsize # adjust the voxel scaling
+        
+        #show_info("Done!")
+        pbr.close()
+
 
 class DoLPmap(QWidget):
 
