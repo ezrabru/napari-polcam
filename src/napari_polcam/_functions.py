@@ -2,6 +2,7 @@
 This module contains functions used for polarisation camera image processing.
 """
 import numpy as np
+from scipy.interpolate import interp2d, RectBivariateSpline
 
 
 class PolarisationCameraImage():
@@ -19,40 +20,91 @@ class PolarisationCameraImage():
         self.mask90
         self.mask135
     
-    def convert_unprocessed(self):
-        if self.method == 'linear interpolation':  
-            print('Linear interpolation')
+    def convert_unprocessed(self,img):
+        if self.method == 'none':
+            I0,I45,I90,I135 = self.estimate_stokes_no_interpolation(img)
+        elif self.method == 'linear interpolation':  
+            I0,I45,I90,I135 = self.estimate_stokes_linear_interpolation(img)
         elif self.method == 'cubic interpolation':
-            print('Cubic interpolation')
-        elif self.method == 'cubic spline interpolation':
-            print('Cubic spline interpolation')
+            I0,I45,I90,I135 = self.estimate_stokes_cubic_interpolation(img)
+        elif self.method == 'bivariate spline interpolation':
+            I0,I45,I90,I135 = self.estimate_stokes_spline_interpolation(img)
         elif self.method == 'fourier':
-            print('Fourier interpolation')
-        elif self.method == 'none':
-            print('No interpolation')
+            I0,I45,I90,I135 = self.estimate_stokes_fourier_interpolation(img)
         else:
             print('Unexpected value for input variable "method" in method "convert_unprocessed" in class "PolarisationCameraImage".')
     
     def estimate_stokes_no_interpolation(self):
         print('No interpolation')
         
-    def estimate_stokes_linear_interpolation(self):
-        print('Linear interpolation')
+    def estimate_stokes_linear_interpolation(self,img):
+        I0 = self.interpolate_channel(img,self.mask0,'linear')
+        I45 = self.interpolate_channel(img,self.mask45,'linear')
+        I90 = self.interpolate_channel(img,self.mask90,'linear')
+        I135 = self.interpolate_channel(img,self.mask135,'linear')
+        return I0,I45,I90,I135
         
-    def estimate_stokes_cubic_interpolation(self):
-        print('Cubic interpolation')
+    def estimate_stokes_cubic_interpolation(self,img):
+        I0 = self.interpolate_channel(img,self.mask0,'cubic')
+        I45 = self.interpolate_channel(img,self.mask45,'cubic')
+        I90 = self.interpolate_channel(img,self.mask90,'cubic')
+        I135 = self.interpolate_channel(img,self.mask135,'cubic')
+        return I0,I45,I90,I135
         
-    def estimate_stokes_cubic_spline_interpolation(self):
-        print('Cubic spline interpolation')
+    def estimate_stokes_spline_interpolation(self,img):
+        RectBivariateSpline
+        I0 = self.interpolate_channel_spline(img,self.mask0)
+        I45 = self.interpolate_channel_spline(img,self.mask45)
+        I90 = self.interpolate_channel_spline(img,self.mask90)
+        I135 = self.interpolate_channel_spline(img,self.mask135)
+        return I0,I45,I90,I135
         
-    def estimate_stokes_fourierinterpolation(self):
+    def estimate_stokes_fourier_interpolation(self):
         print('Fourier interpolation')
+    
+    def interpolate_channel(self,img,mask,interp2d_method):
+        nx, ny = self.imgSizeEven
+        
+        if mask[0][0]:
+            xx,yy = np.meshgrid(np.arange(1,nx+1,2), np.arange(1,ny+1,2)) 
+        elif mask[0][1]:
+            xx,yy = np.meshgrid(np.arange(2,nx+2,2), np.arange(1,ny+1,2)) 
+        elif mask[1][0]:
+            xx,yy = np.meshgrid(np.arange(1,nx+1,2), np.arange(1,ny+2,2)) 
+        elif mask[1][1]:
+            xx,yy = np.meshgrid(np.arange(2,nx+2,2), np.arange(1,ny+2,2)) 
+        else:
+            print("Unexpected mask in function 'interpolate_channel' in class 'PolarisationCameraImage'.")
+
+        z = img*mask # reshape image first
+        f = interp2d(xx, yy, z, kind='cubic')
+        xnew, ynew = np.meshgrid(np.arange(1,nx+1,1), np.arange(1,ny+1,1))
+        return f(xnew, ynew)
+    
+    def interpolate_channel_spline(self,img,mask):
+        nx, ny = self.imgSizeEven
+        
+        if mask[0][0]:
+            xx,yy = np.meshgrid(np.arange(1,nx+1,2), np.arange(1,ny+1,2)) 
+        elif mask[0][1]:
+            xx,yy = np.meshgrid(np.arange(2,nx+2,2), np.arange(1,ny+1,2)) 
+        elif mask[1][0]:
+            xx,yy = np.meshgrid(np.arange(1,nx+1,2), np.arange(1,ny+2,2)) 
+        elif mask[1][1]:
+            xx,yy = np.meshgrid(np.arange(2,nx+2,2), np.arange(1,ny+2,2)) 
+        else:
+            print("Unexpected mask in function 'interpolate_channel_spline' in class 'PolarisationCameraImage'.")
+
+        z = img*mask # reshape image first
+        f = RectBivariateSpline(xx, yy, z)
+        xnew, ynew = np.meshgrid(np.arange(1,nx+1,1), np.arange(1,ny+1,1))
+        return f(xnew, ynew)
     
     def aolp_from_stokes(S1,S2):
         return (1/2)*np.arctan(S2/S1)
     
     def dolp_from_stokes(S0,S1,S2):
-        return np.sqrt((S1^2 + S2^2)/(S0^2))
+        return np.sqrt((S1**2 + S2**2)/(S0**2))
     
     def intensities_from_stokes(S0,S1,S2):
         I0   = (S0 + S1)/2;
