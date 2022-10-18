@@ -10,6 +10,7 @@ class PolarisationCameraImage():
     def __init__(self, img, method, polariser_unit):
         super().__init__()
         
+        self.img = img
         self.method = method
         self.polariser_unit = polariser_unit
         
@@ -19,6 +20,7 @@ class PolarisationCameraImage():
         self.mask45
         self.mask90
         self.mask135
+        self.get_masks_polarizer_array() # generate arrays mask0, mask45, mask90 and mask135
     
     def convert_unprocessed(self,img):
         if self.method == 'none':
@@ -34,8 +36,12 @@ class PolarisationCameraImage():
         else:
             print('Unexpected value for input variable "method" in method "convert_unprocessed" in class "PolarisationCameraImage".')
     
-    def estimate_stokes_no_interpolation(self):
-        print('No interpolation')
+    def estimate_stokes_no_interpolation(self,img):
+        ch1000 = img[::2, ::2] # top left pixel mosaic
+        ch0100 = img[::2, 1::2] # top right pixel mosaic
+        ch0010 = img[1::2, ::2] # bottom left pixel mosaic
+        ch0001 = img[1::2, 1::2] # bottom right pixel mosaic
+        return ch1000, ch0100, ch0010, ch0001
         
     def estimate_stokes_linear_interpolation(self,img):
         I0 = self.interpolate_channel(img,self.mask0,'linear')
