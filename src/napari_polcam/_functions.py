@@ -14,6 +14,8 @@ class PolarisationCameraImage():
         self.method = method
         self.polariser_unit = polariser_unit
         
+        self.numDim = np.ndim(self.img) # number of dimensions of the dataset
+        
         nrows = img.shape[0]
         ncols = img.shape[1]
         if not np.mod(nrows,2):
@@ -24,16 +26,45 @@ class PolarisationCameraImage():
         #self.img = img[:nrows,:ncols]
     
     def unprocessed_to_quadview(self):
-        # demosaick the four channels
-        ch00 = self.img[::2, ::2]
-        ch01 = self.img[::2, 1::2]
-        ch10 = self.img[1::2, ::2]
-        ch11 = self.img[1::2, 1::2]
+
+        if self.numDim == 2:
+            # demosaick the four channels
+            ch00 = self.img[::2, ::2]
+            ch01 = self.img[::2, 1::2]
+            ch10 = self.img[1::2, ::2]
+            ch11 = self.img[1::2, 1::2]
+            # tile the channels together
+            quadview_top = np.concatenate((ch00,ch01),axis=1)
+            quadview_btm = np.concatenate((ch10,ch11),axis=1)
+            quadview = np.concatenate((quadview_top,quadview_btm),axis=0)
+
+        elif self.numDim == 3:
+            # demosaick the four channels
+            ch00 = self.img[:, ::2, ::2]
+            ch01 = self.img[:, ::2, 1::2]
+            ch10 = self.img[:, 1::2, ::2]
+            ch11 = self.img[:, 1::2, 1::2]
+            # tile the channels together
+            quadview_top = np.concatenate((ch00,ch01),axis=2)
+            quadview_btm = np.concatenate((ch10,ch11),axis=2)
+            quadview = np.concatenate((quadview_top,quadview_btm),axis=1)
         
-        quadview_top = np.concatenate((ch00,ch01),axis=1)
-        quadview_btm = np.concatenate((ch10,ch11),axis=1)
-        quadview = np.concatenate((quadview_top,quadview_btm),axis=0)
-        return ch11  
+        elif self.numDim == 4:
+            # demosaick the four channels
+            ch00 = self.img[:, :, ::2, ::2]
+            ch01 = self.img[:, :, ::2, 1::2]
+            ch10 = self.img[:, :, 1::2, ::2]
+            ch11 = self.img[:, :, 1::2, 1::2]
+            # tile the channels together
+            quadview_top = np.concatenate((ch00,ch01),axis=3)
+            quadview_btm = np.concatenate((ch10,ch11),axis=3)
+            quadview = np.concatenate((quadview_top,quadview_btm),axis=2)
+        
+        else:
+            quadview = None
+        
+        
+        return quadview
     
     def convert_unprocessed(self,img):
         if self.method == 'none':

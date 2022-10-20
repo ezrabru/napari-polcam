@@ -102,8 +102,10 @@ class StokesEstimation(QWidget):
             img = layer.data
             pci = PolarisationCameraImage(img, method_selected, polariser_unit_selected)   
             quadview = pci.unprocessed_to_quadview()
-            print(quadview)
-            layer.data = quadview        
+                        
+            self.viewer.add_image(quadview)
+            #layer.data = quadview    
+
         
     def _on_click_stokes(self):
         show_info("Estimate Stokes placeholder.")
