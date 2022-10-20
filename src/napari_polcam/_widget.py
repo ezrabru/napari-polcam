@@ -61,13 +61,16 @@ class StokesEstimation(QWidget):
         method_choice.layout().addWidget(lbl_method)
         dropdown_method = QComboBox()
         dropdown_method.addItem("None")
-        #dropdown_method.addItem("Cubic sline interpolation")
+        #dropdown_method.addItem("Bivariate spline interpolation")
         #dropdown_method.addItem("Fourier")
         #dropdown_method.addItem("Cubic interpolation")
         #dropdown_method.addItem("Linear interpolation")
         method_choice.layout().addWidget(dropdown_method)
         method_choice.layout().setSpacing(0)
         self.dropdown_method = dropdown_method
+
+        btn_channels = QPushButton("Calculate channels")
+        btn_channels.clicked.connect(self._on_click_channels)
         
         btn_stokes = QPushButton("Calculate Stokes parameters")
         btn_stokes.clicked.connect(self._on_click_stokes)
@@ -86,53 +89,89 @@ class StokesEstimation(QWidget):
         btn_aolp_dolp.layout().addWidget(btn_dolp)
         
         self.setLayout(QVBoxLayout())
-        self.layout().setSpacing(0)
+        #self.layout().setSpacing(0)
 
         self.layout().addWidget(polariser_unit)        
         self.layout().addWidget(method_choice)
-        self.layout().addWidget(btn_stokes)
+
         self.layout().addWidget(btn_quadview)
+        self.layout().addWidget(btn_channels)
+        self.layout().addWidget(btn_stokes)
         self.layout().addWidget(btn_aolp_dolp)
         
+    
     def _on_click_quadview(self):
-        show_info("Convert to quadview.")
-        method_selected = self.dropdown_method.currentText()
-        polariser_unit_selected = self.dropdown_unit.currentText()        
+        """" Reorganise the pixels in an unprocessed polarisation camera image
+        into a quadview representation. Add as a new layer to the napari viewer.
+        Repeat for each layer that was selected. """
+        for layer in self.viewer.layers.selection: # for each selected layer
+            pci = PolarisationCameraImage(layer.data,
+                                          self.dropdown_method.currentText(),
+                                          self.dropdown_unit.currentText())   
+            quadview = pci.unprocessed_to_quadview() # calculate quadview
+            self.viewer.add_image(quadview) # display quadview as new layer
+            break
+    
+    def _on_click_channels(self):
+        """" Estimate the 4 intensity channels from an unprocessed polarisation
+        camera image. Add four new layers (I0, I45, I90 and I135) to the napari
+        viewer. Repeat for each layer that was selected. """
         for layer in self.viewer.layers.selection:
-            img = layer.data
-            pci = PolarisationCameraImage(img, method_selected, polariser_unit_selected)   
-            quadview = pci.unprocessed_to_quadview()
-                        
-            self.viewer.add_image(quadview)
-            #layer.data = quadview    
-
-        
+            pci = PolarisationCameraImage(layer.data,
+                                          self.dropdown_method.currentText(),
+                                          self.dropdown_unit.currentText())  
+            I0, I45, I90, I135 = pci.convert_unprocessed()
+            I_min = np.min(I0 + I90)/2
+            I_max = np.max(I0 + I90)/2
+            self.viewer.add_image(I0, contrast_limits=[I_min, I_max])        
+            self.viewer.add_image(I45, contrast_limits=[I_min, I_max])        
+            self.viewer.add_image(I90, contrast_limits=[I_min, I_max])        
+            self.viewer.add_image(I135, contrast_limits=[I_min, I_max])
+            break
+    
     def _on_click_stokes(self):
-        show_info("Estimate Stokes placeholder.")
-        show_info("Convert to quadview.")
-        method_selected = self.dropdown_method.currentText()
-        print(method_selected)
-        polariser_unit_selected = self.dropdown_unit.currentText()
-        print(polariser_unit_selected)
-        # get selected dataset and call it 'img'
-        
-        #max_s0 = np.max(S0)
-        #self.viewer.add_image(S0,contrast_limits=[0, max_s0])        
-        #self.viewer.add_image(S1,contrast_limits=[-max_s0, max_s0])        
-        #self.viewer.add_image(S2,contrast_limits=[-max_s0, max_s0])        
+        """" Estimate the Stokes parameter images from an unprocessed polarisation
+        camera image. Add three new layers (S0, S1 and S2) to the napari viewer.
+        Repeat for each layer that was selected. """
+        for layer in self.viewer.layers.selection:
+            pci = PolarisationCameraImage(layer.data,
+                                          self.dropdown_method.currentText(),
+                                          self.dropdown_unit.currentText())  
+            I0, I45, I90, I135 = pci.convert_unprocessed()
+            
+            I0 = I0.astype(np.double)
+            I45 = I45.astype(np.double)
+            I90 = I90.astype(np.double)
+            I135 = I135.astype(np.double)
+            
+            S0 = (I0 + I45 + I90 + I135)/2
+            S1 = I0 - I90
+            S2 = I45 - I135
+            max_s0 = np.max(S0)
+            self.viewer.add_image(S0, contrast_limits=[0, max_s0])        
+            self.viewer.add_image(S1, contrast_limits=[-max_s0, max_s0])        
+            self.viewer.add_image(S2, contrast_limits=[-max_s0, max_s0])       
+            break
 
     def _on_click_aolp(self):
+        """" Calculate the Angle of Linear Polarisation (AoLP) image from the
+        S1 and S2 layers that are open in the napari viewer. Add the AoLP image
+        to the napari viewer as a new layer."""
         s1 = self.viewer.layers['S1'].data
         s2 = self.viewer.layers['S2'].data
         AoLP = (1/2)*np.arctan(s2/s1)
         self.viewer.add_image(AoLP,contrast_limits=[-np.pi/2,np.pi/2])
         
     def _on_click_dolp(self):
+        """" Calculate the Degree of Linear Polarisation (DoLP) image from the
+        S0, S1 and S2 layers that are open in the napari viewer. Add the DoLP
+        image to the napari viewer as a new layer."""
         s0 = self.viewer.layers['S0'].data
         s1 = self.viewer.layers['S1'].data
         s2 = self.viewer.layers['S2'].data
-        DoLP = np.sqrt((s1*s1 + s2*s2)/(s0*s0))
+        DoLP = np.sqrt((s1**2 + s2**2)/(s0**2))
         self.viewer.add_image(DoLP,contrast_limits=[0,1])
+
 
 
 class HSVmap(QWidget):
