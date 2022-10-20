@@ -4,8 +4,8 @@ This module is an example of a barebones QWidget plugin for napari
 It implements the Widget specification.
 see: https://napari.org/stable/plugins/guides.html?#widgets
 
-Replace code below according to your needs.
 """
+
 import numpy as np
 from napari.utils.notifications import show_info
 from napari.utils import progress
@@ -23,7 +23,6 @@ from qtpy.QtWidgets import (
     QLineEdit,
     QPushButton,
     QLabel,
-    QSpinBox,
     QComboBox,    
     )
 
@@ -32,6 +31,9 @@ from superqt import QDoubleRangeSlider
 
 if TYPE_CHECKING:
     import napari
+
+from ._functions import PolarisationCameraImage
+
 
 class StokesEstimation(QWidget):
     
@@ -51,23 +53,27 @@ class StokesEstimation(QWidget):
         dropdown_unit.addItem("[45 90; 0 -45]")
         polariser_unit.layout().addWidget(dropdown_unit)
         polariser_unit.layout().setSpacing(0)
+        self.dropdown_unit = dropdown_unit
 
         method_choice = QWidget()
         method_choice.setLayout(QHBoxLayout())
         lbl_method = QLabel("Method: ")
         method_choice.layout().addWidget(lbl_method)
         dropdown_method = QComboBox()
-        dropdown_method.addItem("Cubic sline interpolation")
-        dropdown_method.addItem("Fourier")
-        dropdown_method.addItem("Cubic interpolation")
-        dropdown_method.addItem("Linear interpolation")
         dropdown_method.addItem("None")
+        #dropdown_method.addItem("Cubic sline interpolation")
+        #dropdown_method.addItem("Fourier")
+        #dropdown_method.addItem("Cubic interpolation")
+        #dropdown_method.addItem("Linear interpolation")
         method_choice.layout().addWidget(dropdown_method)
         method_choice.layout().setSpacing(0)
-
+        self.dropdown_method = dropdown_method
+        
         btn_stokes = QPushButton("Calculate Stokes parameters")
         btn_stokes.clicked.connect(self._on_click_stokes)
         
+        btn_quadview = QPushButton("Calculate Quadview")
+        btn_quadview.clicked.connect(self._on_click_quadview)
         
         # A container for AoLP and DoLP buttons
         btn_aolp_dolp = QWidget()
@@ -85,10 +91,29 @@ class StokesEstimation(QWidget):
         self.layout().addWidget(polariser_unit)        
         self.layout().addWidget(method_choice)
         self.layout().addWidget(btn_stokes)
+        self.layout().addWidget(btn_quadview)
         self.layout().addWidget(btn_aolp_dolp)
-
+        
+    def _on_click_quadview(self):
+        show_info("Convert to quadview.")
+        method_selected = self.dropdown_method.currentText()
+        polariser_unit_selected = self.dropdown_unit.currentText()        
+        for layer in self.viewer.layers.selection:
+            img = layer.data
+            pci = PolarisationCameraImage(img, method_selected, polariser_unit_selected)   
+            quadview = pci.unprocessed_to_quadview()
+            print(quadview)
+            layer.data = quadview        
+        
     def _on_click_stokes(self):
         show_info("Estimate Stokes placeholder.")
+        show_info("Convert to quadview.")
+        method_selected = self.dropdown_method.currentText()
+        print(method_selected)
+        polariser_unit_selected = self.dropdown_unit.currentText()
+        print(polariser_unit_selected)
+        # get selected dataset and call it 'img'
+        
         #max_s0 = np.max(S0)
         #self.viewer.add_image(S0,contrast_limits=[0, max_s0])        
         #self.viewer.add_image(S1,contrast_limits=[-max_s0, max_s0])        

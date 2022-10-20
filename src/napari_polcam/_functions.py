@@ -14,13 +14,26 @@ class PolarisationCameraImage():
         self.method = method
         self.polariser_unit = polariser_unit
         
-        self.imgSizeEven = (img.shape[0], img.shape[1])
+        nrows = img.shape[0]
+        ncols = img.shape[1]
+        if not np.mod(nrows,2):
+            nrows = nrows - 1
+        if not np.mod(ncols,2):
+            ncols = ncols - 1
+        self.imgSizeEven = (nrows,ncols)
+        #self.img = img[:nrows,:ncols]
+    
+    def unprocessed_to_quadview(self):
+        # demosaick the four channels
+        ch00 = self.img[::2, ::2]
+        ch01 = self.img[::2, 1::2]
+        ch10 = self.img[1::2, ::2]
+        ch11 = self.img[1::2, 1::2]
         
-        self.mask0
-        self.mask45
-        self.mask90
-        self.mask135
-        self.get_masks_polarizer_array() # generate arrays mask0, mask45, mask90 and mask135
+        quadview_top = np.concatenate((ch00,ch01),axis=1)
+        quadview_btm = np.concatenate((ch10,ch11),axis=1)
+        quadview = np.concatenate((quadview_top,quadview_btm),axis=0)
+        return ch11  
     
     def convert_unprocessed(self,img):
         if self.method == 'none':
