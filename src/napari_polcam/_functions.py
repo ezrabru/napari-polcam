@@ -7,13 +7,14 @@ from scipy.interpolate import interp2d, RectBivariateSpline
 
 class PolarisationCameraImage():
     
-    def __init__(self, img, method, polariser_unit):
+    def __init__(self, img, method, polariser_unit, offset):
         super().__init__()
         
-        self.img = img
+        self.img = img - offset
         self.method = method
         self.polariser_unit = polariser_unit
-        
+        self.offset = offset
+                
         self.numDim = np.ndim(self.img) # number of dimensions of the dataset
         
         nrows = img.shape[-1]
@@ -23,8 +24,12 @@ class PolarisationCameraImage():
         if np.mod(ncols,2):
             ncols = ncols - 1
         self.imgSizeEven = (nrows,ncols)
-        print(f"imgSizeEven: {self.imgSizeEven}")
         self.make_dimensions_even() # make image dimensions in x and y even
+    
+    def subtract_bkgnd(self):
+        bkgnd_corrected_img = self.img - self.offset
+        bkgnd_corrected_img[bkgnd_corrected_img < 0] = 0
+        self.img = bkgnd_corrected_img
     
     def unprocessed_to_quadview(self):
 

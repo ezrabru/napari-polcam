@@ -58,16 +58,16 @@ class StokesEstimation(QWidget):
         self.dropdown_unit = dropdown_unit
         
 
-        offset_container = QWidget()
-        offset_container.setLayout(QHBoxLayout())
-        offset_container.setMaximumHeight(40)
-        lbl_offset = QLabel("Offset:")
-        offset_container.layout().addWidget(lbl_offset)
-        lineedit_offset = QLineEdit()
-        lineedit_offset.setText(str(self.offset))
-        lineedit_offset.textChanged.connect(self._on_value_change_offset)
-        offset_container.layout().addWidget(lineedit_offset)
-        self.lineedit_offset = lineedit_offset
+        bkgnd_container = QWidget()
+        bkgnd_container.setLayout(QHBoxLayout())
+        bkgnd_container.setMaximumHeight(40)
+        lbl_bkgnd = QLabel("Background:")
+        bkgnd_container.layout().addWidget(lbl_bkgnd)
+        lineedit_bkgnd = QLineEdit()
+        lineedit_bkgnd.setText(str(self.offset))
+        lineedit_bkgnd.textChanged.connect(self._on_value_change_bkgnd)
+        bkgnd_container.layout().addWidget(lineedit_bkgnd)
+        self.lineedit_bkgnd = lineedit_bkgnd
         
 
         method_choice = QWidget()
@@ -107,16 +107,16 @@ class StokesEstimation(QWidget):
         #self.layout().setSpacing(0)
 
         self.layout().addWidget(polariser_unit)        
-        self.layout().addWidget(offset_container)
         self.layout().addWidget(method_choice)
+        self.layout().addWidget(bkgnd_container)
 
         self.layout().addWidget(btn_quadview)
         self.layout().addWidget(btn_channels)
         self.layout().addWidget(btn_stokes)
         self.layout().addWidget(btn_aolp_dolp)
     
-    def _on_value_change_offset(self):
-        self.offset = float(self.lineedit_offset.text())
+    def _on_value_change_bkgnd(self):
+        self.offset = float(self.lineedit_bkgnd.text())
     
     def _on_click_quadview(self):
         """" Reorganise the pixels in an unprocessed polarisation camera image
@@ -125,7 +125,8 @@ class StokesEstimation(QWidget):
         for layer in self.viewer.layers.selection: # for each selected layer
             pci = PolarisationCameraImage(layer.data,
                                           self.dropdown_method.currentText(),
-                                          self.dropdown_unit.currentText())   
+                                          self.dropdown_unit.currentText(),
+                                          self.offset)
             quadview = pci.unprocessed_to_quadview() # calculate quadview
             self.viewer.add_image(quadview) # display quadview as new layer
             break
@@ -137,7 +138,8 @@ class StokesEstimation(QWidget):
         for layer in self.viewer.layers.selection:
             pci = PolarisationCameraImage(layer.data,
                                           self.dropdown_method.currentText(),
-                                          self.dropdown_unit.currentText())  
+                                          self.dropdown_unit.currentText(),
+                                          self.offset)
             I0, I45, I90, I135 = pci.convert_unprocessed()
             I_min = np.min(I0 + I90)/2
             I_max = np.max(I0 + I90)/2
@@ -154,7 +156,10 @@ class StokesEstimation(QWidget):
         for layer in self.viewer.layers.selection:
             pci = PolarisationCameraImage(layer.data,
                                           self.dropdown_method.currentText(),
-                                          self.dropdown_unit.currentText())  
+                                          self.dropdown_unit.currentText(),
+                                          self.offset)
+            
+            pci.subtract_bkgnd()
             I0, I45, I90, I135 = pci.convert_unprocessed()
             
             I0 = I0.astype(np.double)
@@ -228,23 +233,30 @@ class HSVmap(QWidget):
             slider_dolp.setMinimum(0)
             slider_dolp.setMaximum(1)
             slider_dolp.setValue([0,1])
-            slider_dolp.setSingleStep(0.001)
+            slider_dolp.setSingleStep(0.0001)
             lbl_slider_dolp = QLabel()
             lbl_slider_dolp.setText("DoLP threshold:")
             lbl_slider_dolp.setAlignment(Qt.AlignCenter)
             lbl_slider_dolp.setBuddy(slider_dolp)
-            
+            #slider_dolp.valueChanged.connect(self._slider_dolp_changed)
+            self.slider_dolp = slider_dolp
+
             # S0 threshold slider
             slider_s0 = QDoubleRangeSlider()
             slider_s0.setOrientation(Qt.Horizontal)
-            slider_s0.setMinimum(0)
-            slider_s0.setMaximum(1)
-            slider_s0.setValue([0,1])
-            slider_s0.setSingleStep(0.01)
+            s0 = self.viewer.layers['S0'].data
+            s0_min = np.min(s0)
+            s0_max = np.max(s0)
+            slider_s0.setMinimum(s0_min)
+            slider_s0.setMaximum(s0_max)
+            slider_s0.setValue([s0_min,s0_max])
+            slider_s0.setSingleStep(0.0001)
             lbl_slider_s0 = QLabel()
             lbl_slider_s0.setText("S0 threshold:")
             lbl_slider_s0.setAlignment(Qt.AlignCenter)
             lbl_slider_s0.setBuddy(slider_s0)
+            #slider_s0.valueChanged.connect(self._slider_s0_changed)
+            self.slider_s0 = slider_s0
             
             # Button to generate HSVmap on whole dataset
             btn_hsv_map = QPushButton("Calculate HSVmap")
@@ -303,12 +315,7 @@ class HSVmap(QWidget):
         self.plot_dolp.plot(binedges[0:-1],counts/np.max(counts),name='DoLP')
         self.plot_dolp.setXRange(0, 1, padding=0)
         self.plot_dolp.setYRange(0, 1, padding=0)
-    
-    def _on_value_change_pixsize(self):
-        value_xy = float(self.lineEdit_scale_xy.text())
-        value_z = float(self.lineEdit_scale_z.text())
-        for layer in self.viewer.layers:
-            layer.scale = [value_z, value_xy, value_xy]
+
             
     def calculate_aolp(self):
         s1 = self.viewer.layers['S1'].data
@@ -320,6 +327,7 @@ class HSVmap(QWidget):
         s0 = self.viewer.layers['S0'].data
         s1 = self.viewer.layers['S1'].data
         s2 = self.viewer.layers['S2'].data
+        
         DoLP = np.sqrt((s1*s1 + s2*s2)/(s0*s0))
         self.viewer.add_image(DoLP,contrast_limits=[0,1])
             
@@ -342,11 +350,11 @@ class HSVmap(QWidget):
     def check_if_aolp_is_loaded(self):
         if 'AoLP' not in self.viewer.layers: return 0
         else: return 1
+        
+    def check_if_aolp_is_loaded(self):
+        if 'AoLP' not in self.viewer.layers: return 0
+        else: return 1
 
-   
-    #def _on_click_prepare_hsvmap(self):
-    #    # generate 8-bit versions of AoLP and DoLP for faster processing
-    
     def _on_click_hsvmap(self):
         
         pbr = progress(total=10)
@@ -357,9 +365,20 @@ class HSVmap(QWidget):
         s = self.viewer.layers['DoLP'].data # saturation
         v = self.viewer.layers['S0'].data # value
         
+        s0_lims = self.slider_s0.value()
+        dolp_lims = self.slider_dolp.value()
+        
         # scale parameters
         h = (h + np.pi/2)/np.pi; # rescale [-pi/2, pi/2] to [0, 1]
-        v = (v - np.min(v))/(np.max(v) - np.min(v)); # rescale intensity to [0 1]
+        s = (s - dolp_lims[0])/(dolp_lims[1] - dolp_lims[0]); # rescale DoLP
+        v = (v - s0_lims[0])/(s0_lims[1] - s0_lims[0]); # rescale DoLP
+        
+        h[h < 0] = 0
+        h[h > 1] = 1
+        s[s < 0] = 0
+        s[s > 1] = 1
+        v[v < 0] = 0
+        v[v > 1] = 1
         
         numDim = len(h.shape) # number of dimensions of the dataset
         hsv = np.stack([h,s,v],numDim) # stack the h, s and v channels along a new dimension
@@ -392,12 +411,10 @@ class HSVmap(QWidget):
         else: # if no layer with the name 'HSVmap_B' exists, make it
             self.viewer.add_image(hsv_b.astype(np.uint8),contrast_limits=[0,255],\
                                   colormap="blue",blending="additive",name="HSVmap_B")
-        
-        self._on_value_change_pixsize # adjust the voxel scaling
-        
+                
         #show_info("Done!")
         pbr.close()
-
+        
 
 class DoLPmap(QWidget):
 
