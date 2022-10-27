@@ -40,6 +40,8 @@ class StokesEstimation(QWidget):
     def __init__(self, napari_viewer):
         super().__init__()
         self.viewer = napari_viewer
+        
+        self.offset = 0.0 # initialise background to be zero
 
         polariser_unit = QWidget()
         polariser_unit.setLayout(QHBoxLayout())
@@ -54,6 +56,19 @@ class StokesEstimation(QWidget):
         polariser_unit.layout().addWidget(dropdown_unit)
         polariser_unit.layout().setSpacing(0)
         self.dropdown_unit = dropdown_unit
+        
+
+        offset_container = QWidget()
+        offset_container.setLayout(QHBoxLayout())
+        offset_container.setMaximumHeight(40)
+        lbl_offset = QLabel("Offset:")
+        offset_container.layout().addWidget(lbl_offset)
+        lineedit_offset = QLineEdit()
+        lineedit_offset.setText(str(self.offset))
+        lineedit_offset.textChanged.connect(self._on_value_change_offset)
+        offset_container.layout().addWidget(lineedit_offset)
+        self.lineedit_offset = lineedit_offset
+        
 
         method_choice = QWidget()
         method_choice.setLayout(QHBoxLayout())
@@ -92,13 +107,16 @@ class StokesEstimation(QWidget):
         #self.layout().setSpacing(0)
 
         self.layout().addWidget(polariser_unit)        
+        self.layout().addWidget(offset_container)
         self.layout().addWidget(method_choice)
 
         self.layout().addWidget(btn_quadview)
         self.layout().addWidget(btn_channels)
         self.layout().addWidget(btn_stokes)
         self.layout().addWidget(btn_aolp_dolp)
-        
+    
+    def _on_value_change_offset(self):
+        self.offset = float(self.lineedit_offset.text())
     
     def _on_click_quadview(self):
         """" Reorganise the pixels in an unprocessed polarisation camera image
