@@ -182,7 +182,7 @@ class StokesEstimation(QWidget):
         to the napari viewer as a new layer."""
         s1 = self.viewer.layers['S1'].data
         s2 = self.viewer.layers['S2'].data
-        AoLP = (1/2)*np.arctan(s2/s1)
+        AoLP = (1/2)*np.arctan2(s2,s1)
         self.viewer.add_image(AoLP,contrast_limits=[-np.pi/2,np.pi/2])
         
     def _on_click_dolp(self):
@@ -320,7 +320,7 @@ class HSVmap(QWidget):
     def calculate_aolp(self):
         s1 = self.viewer.layers['S1'].data
         s2 = self.viewer.layers['S2'].data
-        AoLP = (1/2)*np.arctan(s2/s1)
+        AoLP = (1/2)*np.arctan2(s2,s1)
         self.viewer.add_image(AoLP,contrast_limits=[-np.pi/2,np.pi/2])
         
     def calculate_dolp(self):
@@ -370,8 +370,11 @@ class HSVmap(QWidget):
         
         # scale parameters
         h = (h + np.pi/2)/np.pi; # rescale [-pi/2, pi/2] to [0, 1]
-        s = (s - dolp_lims[0])/(dolp_lims[1] - dolp_lims[0]); # rescale DoLP
-        v = (v - s0_lims[0])/(s0_lims[1] - s0_lims[0]); # rescale DoLP
+        
+        v = v/np.max(v)
+        
+        #s = (s - dolp_lims[0])/(dolp_lims[1] - dolp_lims[0]); # rescale DoLP
+        #v = (v - s0_lims[0])/(s0_lims[1] - s0_lims[0]); # rescale DoLP
         
         h[h < 0] = 0
         h[h > 1] = 1
@@ -383,7 +386,7 @@ class HSVmap(QWidget):
         numDim = len(h.shape) # number of dimensions of the dataset
         hsv = np.stack([h,s,v],numDim) # stack the h, s and v channels along a new dimension
         rgb = hsv_to_rgb(hsv) # convert hsv colourspace to rgb colourspace
-        
+                
         # scale to 8-bit colour (0-255)
         hsv_r = rgb[..., 0]*255
         hsv_g = rgb[..., 1]*255
@@ -466,7 +469,7 @@ class DoLPmap(QWidget):
         s2 = self.viewer.layers['S2'].data
         
         # calculate AoLP (SHOULD CHECK IF ALREADY OPEN)
-        AoLP = (1/2)*np.arctan(s2/s1)
+        AoLP = (1/2)*np.arctan2(s2,s1)
         self.viewer.add_image(AoLP,contrast_limits=[-np.pi/2,np.pi/2])
         
         # calculate DoLP (SHOULD CHECK IF ALREADY OPEN)
