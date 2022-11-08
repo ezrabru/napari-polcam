@@ -25,63 +25,63 @@ class PolarisationCameraImage():
         self.imgSizeEven = (nrows,ncols)
         self.make_dimensions_even() # make image dimensions in x and y even
     
+    
     def subtract_bkgnd(self):
         bkgnd_corrected_img = self.img - self.offset
         bkgnd_corrected_img[bkgnd_corrected_img < 0] = 0
         self.img = bkgnd_corrected_img
     
+    
     def unprocessed_to_quadview(self):
-
+        """ Rearrange pixels in a unprocessed data to form four chanels
+        arranged as four big tiles, like:
+            
+            unprocessed = [[a,b,a,b,a,b],
+                           [d,c,d,c,d,c],
+                           [a,b,a,b,a,b],
+                           [d,c,d,c,d,c],
+                           [a,b,a,b,a,b],
+                           [d,c,d,c,d,c]]
+            
+            quadview = [[a,a,a,b,b,b],
+                        [a,a,a,b,b,b],
+                        [a,a,a,b,b,b],
+                        [d,d,d,c,c,c],
+                        [d,d,d,c,c,c],
+                        [d,d,d,c,c,c]]
+        """
+        # split into four channels
+        ch00, ch01, ch10, ch11 = self.unprocessed_to_unassigned_channels()
+        # tile the channels together
         if self.numDim == 2:
-            # demosaick the four channels
-            ch00 = self.img[::2, ::2]
-            ch01 = self.img[::2, 1::2]
-            ch10 = self.img[1::2, ::2]
-            ch11 = self.img[1::2, 1::2]
-            # tile the channels together
             quadview_top = np.concatenate((ch00,ch01),axis=1)
             quadview_btm = np.concatenate((ch10,ch11),axis=1)
             quadview = np.concatenate((quadview_top,quadview_btm),axis=0)
-
         elif self.numDim == 3:
-            # demosaick the four channels
-            ch00 = self.img[:, ::2, ::2]
-            ch01 = self.img[:, ::2, 1::2]
-            ch10 = self.img[:, 1::2, ::2]
-            ch11 = self.img[:, 1::2, 1::2]
-            # tile the channels together
             quadview_top = np.concatenate((ch00,ch01),axis=2)
             quadview_btm = np.concatenate((ch10,ch11),axis=2)
             quadview = np.concatenate((quadview_top,quadview_btm),axis=1)
-        
         elif self.numDim == 4:
-            # demosaick the four channels
-            ch00 = self.img[:, :, ::2, ::2]
-            ch01 = self.img[:, :, ::2, 1::2]
-            ch10 = self.img[:, :, 1::2, ::2]
-            ch11 = self.img[:, :, 1::2, 1::2]
-            # tile the channels together
             quadview_top = np.concatenate((ch00,ch01),axis=3)
             quadview_btm = np.concatenate((ch10,ch11),axis=3)
             quadview = np.concatenate((quadview_top,quadview_btm),axis=2)
-        
         else:
             quadview = None
         
         return quadview
     
+    
     def convert_unprocessed(self):
         if self.method == 'None':
+            print(f"method: {self.method}")
             I0,I45,I90,I135 = self.estimate_channels_no_interpolation()
-        elif self.method == 'Cubic interpolation':
+        elif self.method == 'Cubic spline interpolation':
+            print(f"method: {self.method}")
             I0,I45,I90,I135 = self.interpolate_channels()
-        elif self.method == 'Fourier interpolation':
-            print('Fourier interpolation is not yet supported.')
-
         else:
             print('Unexpected value for input variable "method" in method "convert_unprocessed" in class "PolarisationCameraImage".')
-        
         return I0, I45, I90, I135
+    
     
     def unprocessed_to_unassigned_channels(self):
         """ Reorganise pixels in unprocessed image to get four unassigned
@@ -112,14 +112,6 @@ class PolarisationCameraImage():
         
         return ch00, ch01, ch10, ch11
     
-    def estimate_channels_no_interpolation(self):
-        """ Reorganise pixels in unprocessed image to get the 4 intensity
-        channels."""
-        ch00, ch01, ch10, ch11 = self.unprocessed_to_unassigned_channels()
-        # assign channels to correct polariser transmission axis orientation
-        I0,I45,I90,I135 = self.assign_channel_to_transmission_axis_orientation(ch00,ch01,ch10,ch11)
-        return I0, I45, I90, I135
-    
     def interpolate_channels(self):
         
         # get coordinates of the known values in each channel
@@ -149,7 +141,7 @@ class PolarisationCameraImage():
             ch10_interpolated = self.interpolate_frame(xx10, yy10, ch10, xx_hr, yy_hr)
             ch11_interpolated = self.interpolate_frame(xx11, yy11, ch11, xx_hr, yy_hr)
             
-        if self.numDim == 3:
+        elif self.numDim == 3:
             # initialise
             ch00_interpolated = np.zeros_like(self.img)
             ch01_interpolated = np.zeros_like(self.img)
@@ -162,7 +154,7 @@ class PolarisationCameraImage():
                 ch10_interpolated[id_frame,:,:] = self.interpolate_frame(xx10, yy10, ch10[id_frame,:,:], xx_hr, yy_hr)
                 ch11_interpolated[id_frame,:,:] = self.interpolate_frame(xx11, yy11, ch11[id_frame,:,:], xx_hr, yy_hr)
                 
-        if self.numDim == 4:
+        elif self.numDim == 4:
             # initialise
             ch00_interpolated = np.zeros_like(self.img)
             ch01_interpolated = np.zeros_like(self.img)
@@ -185,77 +177,27 @@ class PolarisationCameraImage():
         return I0, I45, I90, I135
     
     
+    def estimate_channels_no_interpolation(self):
+        """ Reorganise pixels in unprocessed image to get the 4 intensity
+        channels."""
+        ch00,ch01,ch10,ch11 = self.unprocessed_to_unassigned_channels()
+        I0,I45,I90,I135 = self.assign_channel_to_transmission_axis_orientation(ch00,ch01,ch10,ch11)
+        return I0, I45, I90, I135
+    
+    
     def interpolate_frame(self, xx, yy, ch, xx_hr, yy_hr):
-        if self.method == 'Cubic interpolation':
+        if self.method == 'Cubic spline interpolation':
             interp_spline = RectBivariateSpline(xx, yy, ch)
             interpolated_frame = interp_spline(xx_hr, yy_hr)
-        #elif self.method == 'Fourier':
-            # not yet supported
+        elif self.method == 'Fourier interpolation':
+            print('Fourier interpolation is not yet supported.')            
         else:
             print('Unexpected value for input variable "method" in method "convert_unprocessed" in class "PolarisationCameraImage".')
-        
         return interpolated_frame
 
 
-    def get_masks_polarizer_array(self):
-        """ Get binary masks for the differently
-        %oriented polarisers in the image plane.
-        """
-        # generate the masks for the correct number of pixels or slightly more
-        numRows, numCols = self.imgSizeEven
-        numRepsMosaic = np.ceil(np.max(numRows,numCols)/2);
-        [mask00,mask01,mask10,mask11] = self.get_mosaic_masks(numRepsMosaic);
-                    
-        # remove any excess rows or columns
-        mask00 = mask00[0:numRows+1][0:numCols+1]
-        mask01 = mask01[0:numRows+1][0:numCols+1]
-        mask10 = mask10[0:numRows+1][0:numCols+1]
-        mask11 = mask11[0:numRows+1][0:numCols+1]
-        
-        # assign masks to right pixels
-        if self.polariser_unit[0][0] == 0: # top left pixel of image has a polarizer with transmission axis at 0 degrees
-            self.mask0  = mask00
-            self.mask90 = mask11
-            if self.polariser_unit[0][1] == 45:
-                self.mask45 = mask01
-                self.mask135 = mask10
-            else:
-                self.mask45 = mask10
-                self.mask135 = mask01
-
-        elif self.polariser_unit[0][0] == -45: # top left pixel of image has a polarizer with transmission axis at -45 degrees
-            self.maskn45 = mask00
-            self.maskp45 = mask11
-            if self.polariser_unit[0][1] == 0:
-                self.mask0  = mask01
-                self.mask90 = mask10
-            else:
-                self.mask0  = mask10
-                self.mask90 = mask01
-
-        elif self.polariser_unit[0][0] == 45: # top left pixel of image has a polarizer with transmission axis at 45 degrees
-            self.maskp45 = mask00
-            self.maskn45 = mask11
-            if self.polariser_unit[0][1] == 0:
-                self.mask0  = mask01
-                self.mask90 = mask10
-            else:
-                self.mask0  = mask10
-                self.mask90 = mask01
-
-        elif self.polariser_unit[0][0] == 90: # top left pixel of image has a polarizer with transmission axis at 90 degrees
-            self.mask90 = mask00
-            self.mask0  = mask11
-            if self.polariser_unit[0][1] == 45:
-                self.mask45 = mask01
-                self.mask135 = mask10
-            else:
-                self.mask45 = mask10
-                self.mask135 = mask01
-        else:       
-            print('Unexpected value for input variable "polariser_unit" in method "get_masks_polarizer_array" in class "PolarisationCameraImage".')
-    
     def assign_channel_to_transmission_axis_orientation(self,ch00,ch01,ch10,ch11):
+        """ Assign the different channels to the correct polariser orientation."""
         if self.polariser_unit == "[-45 0; 90 45]":
             I0 = ch01
             I45 = ch11
@@ -278,8 +220,8 @@ class PolarisationCameraImage():
             I135 = ch11
         else:
             print(f"The value {self.polariser_unit} is not supported.")
-                
         return I0, I45, I90, I135
+    
     
     def make_dimensions_even(self):
         nrows, ncols = self.imgSizeEven
@@ -292,7 +234,7 @@ class PolarisationCameraImage():
         else:
             print(f"Processing of a {self.numDim}-dimensional dataset is not supported in napari-polcam.")
 
-    
+
     def get_mosaic_masks(numRepsMosaic):
         mask00 = np.array([[1, 0], [0, 0]])
         mask01 = np.array([[0, 1], [0, 0]])
@@ -304,11 +246,14 @@ class PolarisationCameraImage():
         mask11 = np.tile(mask11, (numRepsMosaic,numRepsMosaic))
         return mask00, mask01, mask10, mask11
     
+    
     def aolp_from_stokes(S1,S2):
-        return (1/2)*np.arctan(S2/S1)
+        return (1/2)*np.arctan2(S2,S1)
+    
     
     def dolp_from_stokes(S0,S1,S2):
         return np.sqrt((S1**2 + S2**2)/(S0**2))
+    
     
     def intensities_from_stokes(S0,S1,S2):
         I0   = (S0 + S1)/2;
@@ -316,6 +261,7 @@ class PolarisationCameraImage():
         I45  = (S0 + S2)/2;
         I135 = (S0 - S2)/2;
         return I0, I45, I90, I135
+    
     
     def stokes_from_intensities(I0,I45,I90,I135):
         S0 = (I0 + I45 + I90 + I135)/2

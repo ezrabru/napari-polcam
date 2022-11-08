@@ -75,9 +75,9 @@ class StokesEstimation(QWidget):
         lbl_method = QLabel("Method: ")
         method_choice.layout().addWidget(lbl_method)
         dropdown_method = QComboBox()
+        dropdown_method.addItem("Cubic spline interpolation")
         dropdown_method.addItem("None")
         #dropdown_method.addItem("Fourier")
-        dropdown_method.addItem("Cubic interpolation")
         method_choice.layout().addWidget(dropdown_method)
         method_choice.layout().setSpacing(0)
         self.dropdown_method = dropdown_method
@@ -156,7 +156,6 @@ class StokesEstimation(QWidget):
                                           self.dropdown_method.currentText(),
                                           self.dropdown_unit.currentText(),
                                           self.offset)
-            
             pci.subtract_bkgnd()
             I0, I45, I90, I135 = pci.convert_unprocessed()
             
@@ -348,10 +347,6 @@ class HSVmap(QWidget):
     def check_if_aolp_is_loaded(self):
         if 'AoLP' not in self.viewer.layers: return 0
         else: return 1
-        
-    def check_if_aolp_is_loaded(self):
-        if 'AoLP' not in self.viewer.layers: return 0
-        else: return 1
 
     def _on_click_hsvmap(self):
         
@@ -368,11 +363,8 @@ class HSVmap(QWidget):
         
         # scale parameters
         h = (h + np.pi/2)/np.pi; # rescale [-pi/2, pi/2] to [0, 1]
-        
-        v = v/np.max(v)
-        
-        #s = (s - dolp_lims[0])/(dolp_lims[1] - dolp_lims[0]); # rescale DoLP
-        #v = (v - s0_lims[0])/(s0_lims[1] - s0_lims[0]); # rescale DoLP
+        s = (s - dolp_lims[0])/(dolp_lims[1] - dolp_lims[0]); # rescale DoLP
+        v = (v - s0_lims[0])/(s0_lims[1] - s0_lims[0]); # rescale DoLP
         
         h[h < 0] = 0
         h[h > 1] = 1
