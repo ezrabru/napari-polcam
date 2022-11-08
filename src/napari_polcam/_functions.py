@@ -2,8 +2,7 @@
 This module contains functions used for polarisation camera image processing.
 """
 import numpy as np
-from scipy.interpolate import interp2d, RectBivariateSpline
-
+from scipy.interpolate import RectBivariateSpline
 
 class PolarisationCameraImage():
     
@@ -74,22 +73,19 @@ class PolarisationCameraImage():
     def convert_unprocessed(self):
         if self.method == 'None':
             I0,I45,I90,I135 = self.estimate_channels_no_interpolation()
-        elif self.method == 'Linear interpolation':  
-            I0,I45,I90,I135 = self.estimate_channels_linear_interpolation()
         elif self.method == 'Cubic interpolation':
-            I0,I45,I90,I135 = self.estimate_channels_cubic_interpolation()
-        elif self.method == 'Bivariate spline interpolation':
-            I0,I45,I90,I135 = self.estimate_channels_spline_interpolation()
-        elif self.method == 'Fourier':
-            I0,I45,I90,I135 = self.estimate_channels_fourier_interpolation()
+            I0,I45,I90,I135 = self.interpolate_channels()
+        elif self.method == 'Fourier interpolation':
+            print('Fourier interpolation is not yet supported.')
+
         else:
             print('Unexpected value for input variable "method" in method "convert_unprocessed" in class "PolarisationCameraImage".')
         
         return I0, I45, I90, I135
     
-    def estimate_channels_no_interpolation(self):
-        """ Reorganise pixels in unprocessed image to get the 4 intensity
-        channels."""
+    def unprocessed_to_unassigned_channels(self):
+        """ Reorganise pixels in unprocessed image to get four unassigned
+        intensity channels."""
         if self.numDim == 2:
             # demosaick the four channels
             ch00 = self.img[::2, ::2]
@@ -114,73 +110,93 @@ class PolarisationCameraImage():
         else:
             print(f"Processing of a {self.numDim}-dimensional dataset is not supported in napari-polcam.")
         
+        return ch00, ch01, ch10, ch11
+    
+    def estimate_channels_no_interpolation(self):
+        """ Reorganise pixels in unprocessed image to get the 4 intensity
+        channels."""
+        ch00, ch01, ch10, ch11 = self.unprocessed_to_unassigned_channels()
         # assign channels to correct polariser transmission axis orientation
         I0,I45,I90,I135 = self.assign_channel_to_transmission_axis_orientation(ch00,ch01,ch10,ch11)
         return I0, I45, I90, I135
-        
-    def estimate_channels_linear_interpolation(self):
-        I0 = self.interpolate_channel(self.img,self.mask0,'linear')
-        I45 = self.interpolate_channel(self.img,self.mask45,'linear')
-        I90 = self.interpolate_channel(self.img,self.mask90,'linear')
-        I135 = self.interpolate_channel(self.img,self.mask135,'linear')
-        return I0,I45,I90,I135
-        
-    def estimate_channels_cubic_interpolation(self):
-        I0 = self.interpolate_channel(self.img,self.mask0,'cubic')
-        I45 = self.interpolate_channel(self.img,self.mask45,'cubic')
-        I90 = self.interpolate_channel(self.img,self.mask90,'cubic')
-        I135 = self.interpolate_channel(self.img,self.mask135,'cubic')
-        return I0,I45,I90,I135
-        
-    def estimate_channels_spline_interpolation(self):
-        RectBivariateSpline
-        I0 = self.interpolate_channel_spline(self.img,self.mask0)
-        I45 = self.interpolate_channel_spline(self.img,self.mask45)
-        I90 = self.interpolate_channel_spline(self.img,self.mask90)
-        I135 = self.interpolate_channel_spline(self.img,self.mask135)
-        return I0,I45,I90,I135
-        
-    def estimate_channels_fourier_interpolation(self):
-        print('Fourier interpolation')
     
-    def interpolate_channel(self,img,mask,interp2d_method):
-        nx, ny = self.imgSizeEven
+    def interpolate_channels(self):
         
-        if mask[0][0]:
-            xx,yy = np.meshgrid(np.arange(1,nx+1,2), np.arange(1,ny+1,2)) 
-        elif mask[0][1]:
-            xx,yy = np.meshgrid(np.arange(2,nx+2,2), np.arange(1,ny+1,2)) 
-        elif mask[1][0]:
-            xx,yy = np.meshgrid(np.arange(1,nx+1,2), np.arange(1,ny+2,2)) 
-        elif mask[1][1]:
-            xx,yy = np.meshgrid(np.arange(2,nx+2,2), np.arange(1,ny+2,2)) 
-        else:
-            print("Unexpected mask in function 'interpolate_channel' in class 'PolarisationCameraImage'.")
+        # get coordinates of the known values in each channel
+        ny, nx = self.imgSizeEven
+        xx_hr = np.arange(0,nx,1)
+        yy_hr = np.arange(0,ny,1)
 
-        z = img*mask # reshape image first
-        f = interp2d(xx, yy, z, kind='cubic')
-        xnew, ynew = np.meshgrid(np.arange(1,nx+1,1), np.arange(1,ny+1,1))
-        return f(xnew, ynew)
-    
-    def interpolate_channel_spline(self,img,mask):
-        nx, ny = self.imgSizeEven
+        # get the known values for each channel (i.e. split channels)
+        ch00, ch01, ch10, ch11 = self.unprocessed_to_unassigned_channels()
         
-        if mask[0][0]:
-            xx,yy = np.meshgrid(np.arange(1,nx+1,2), np.arange(1,ny+1,2)) 
-        elif mask[0][1]:
-            xx,yy = np.meshgrid(np.arange(2,nx+2,2), np.arange(1,ny+1,2)) 
-        elif mask[1][0]:
-            xx,yy = np.meshgrid(np.arange(1,nx+1,2), np.arange(1,ny+2,2)) 
-        elif mask[1][1]:
-            xx,yy = np.meshgrid(np.arange(2,nx+2,2), np.arange(1,ny+2,2)) 
+        # low resolution mesh (known mesh) for each channel
+        xx00 = np.arange(0,nx,2)
+        yy00 = np.arange(0,ny,2)
+        
+        xx01 = np.arange(1,nx+1,2)
+        yy01 = np.arange(0,ny,2)
+        
+        xx10 = np.arange(0,nx,2)
+        yy10 = np.arange(1,ny+1,2)
+        
+        xx11 = np.arange(1,nx+1,2)
+        yy11 = np.arange(1,ny+1,2)
+        
+        if self.numDim == 2:            
+            ch00_interpolated = self.interpolate_frame(xx00, yy00, ch00, xx_hr, yy_hr)
+            ch01_interpolated = self.interpolate_frame(xx01, yy01, ch01, xx_hr, yy_hr)
+            ch10_interpolated = self.interpolate_frame(xx10, yy10, ch10, xx_hr, yy_hr)
+            ch11_interpolated = self.interpolate_frame(xx11, yy11, ch11, xx_hr, yy_hr)
+            
+        if self.numDim == 3:
+            # initialise
+            ch00_interpolated = np.zeros_like(self.img)
+            ch01_interpolated = np.zeros_like(self.img)
+            ch10_interpolated = np.zeros_like(self.img)
+            ch11_interpolated = np.zeros_like(self.img)
+            numSlices = self.img.shape[0]
+            for id_frame in range(numSlices):
+                ch00_interpolated[id_frame,:,:] = self.interpolate_frame(xx00, yy00, ch00[id_frame,:,:], xx_hr, yy_hr)
+                ch01_interpolated[id_frame,:,:] = self.interpolate_frame(xx01, yy01, ch01[id_frame,:,:], xx_hr, yy_hr)
+                ch10_interpolated[id_frame,:,:] = self.interpolate_frame(xx10, yy10, ch10[id_frame,:,:], xx_hr, yy_hr)
+                ch11_interpolated[id_frame,:,:] = self.interpolate_frame(xx11, yy11, ch11[id_frame,:,:], xx_hr, yy_hr)
+                
+        if self.numDim == 4:
+            # initialise
+            ch00_interpolated = np.zeros_like(self.img)
+            ch01_interpolated = np.zeros_like(self.img)
+            ch10_interpolated = np.zeros_like(self.img)
+            ch11_interpolated = np.zeros_like(self.img)
+            numTimepoints = self.img.shape[0]
+            numSlices = self.img.shape[1]
+            for id_time in range(numTimepoints):
+                for id_frame in range(numSlices):
+                    ch00_interpolated[id_time,id_frame,:,:] = self.interpolate_frame(xx00, yy00, ch00[id_time,id_frame,:,:], xx_hr, yy_hr)
+                    ch01_interpolated[id_time,id_frame,:,:] = self.interpolate_frame(xx01, yy01, ch01[id_time,id_frame,:,:], xx_hr, yy_hr)
+                    ch10_interpolated[id_time,id_frame,:,:] = self.interpolate_frame(xx10, yy10, ch10[id_time,id_frame,:,:], xx_hr, yy_hr)
+                    ch11_interpolated[id_time,id_frame,:,:] = self.interpolate_frame(xx11, yy11, ch11[id_time,id_frame,:,:], xx_hr, yy_hr)
+        
         else:
-            print("Unexpected mask in function 'interpolate_channel_spline' in class 'PolarisationCameraImage'.")
-
-        z = img*mask # reshape image first
-        f = RectBivariateSpline(xx, yy, z)
-        xnew, ynew = np.meshgrid(np.arange(1,nx+1,1), np.arange(1,ny+1,1))
-        return f(xnew, ynew)
+            print(f"Processing of a {self.numDim}-dimensional dataset is not supported in napari-polcam.")
+        
+        I0, I45, I90, I135 = self.assign_channel_to_transmission_axis_orientation(ch00_interpolated,ch01_interpolated,ch10_interpolated,ch11_interpolated)
+        
+        return I0, I45, I90, I135
     
+    
+    def interpolate_frame(self, xx, yy, ch, xx_hr, yy_hr):
+        if self.method == 'Cubic interpolation':
+            interp_spline = RectBivariateSpline(xx, yy, ch)
+            interpolated_frame = interp_spline(xx_hr, yy_hr)
+        #elif self.method == 'Fourier':
+            # not yet supported
+        else:
+            print('Unexpected value for input variable "method" in method "convert_unprocessed" in class "PolarisationCameraImage".')
+        
+        return interpolated_frame
+
+
     def get_masks_polarizer_array(self):
         """ Get binary masks for the differently
         %oriented polarisers in the image plane.

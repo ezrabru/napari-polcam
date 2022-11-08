@@ -76,10 +76,8 @@ class StokesEstimation(QWidget):
         method_choice.layout().addWidget(lbl_method)
         dropdown_method = QComboBox()
         dropdown_method.addItem("None")
-        #dropdown_method.addItem("Bivariate spline interpolation")
         #dropdown_method.addItem("Fourier")
-        #dropdown_method.addItem("Cubic interpolation")
-        #dropdown_method.addItem("Linear interpolation")
+        dropdown_method.addItem("Cubic interpolation")
         method_choice.layout().addWidget(dropdown_method)
         method_choice.layout().setSpacing(0)
         self.dropdown_method = dropdown_method
