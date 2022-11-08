@@ -1,6 +1,6 @@
 # napari-polcam
 
-[![License BSD-3](https://img.shields.io/pypi/l/napari-polcam.svg?color=green)](https://github.com/ezrabru/napari-polcam/raw/main/LICENSE)
+[![License BSD-3](https://img.shields.io/pypi/l/napari-polcam.svg?color=green)](https://github.com/ezrabru/napari-polcam/blob/main/LICENSE)
 [![PyPI](https://img.shields.io/pypi/v/napari-polcam.svg?color=green)](https://pypi.org/project/napari-polcam)
 [![Python Version](https://img.shields.io/pypi/pyversions/napari-polcam.svg?color=green)](https://python.org)
 [![tests](https://github.com/ezrabru/napari-polcam/workflows/tests/badge.svg)](https://github.com/ezrabru/napari-polcam/actions)
