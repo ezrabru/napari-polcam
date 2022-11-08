@@ -23,7 +23,8 @@ from qtpy.QtWidgets import (
     QLineEdit,
     QPushButton,
     QLabel,
-    QComboBox,    
+    QComboBox,  
+    QGroupBox
     )
 
 from qtpy.QtCore import Qt
@@ -42,7 +43,8 @@ class StokesEstimation(QWidget):
         self.viewer = napari_viewer
         
         self.offset = 0.0 # initialise background to be zero
-
+        
+        # layout of the "polariser unit" gui input
         polariser_unit = QWidget()
         polariser_unit.setLayout(QHBoxLayout())
         polariser_unit.setMaximumHeight(40)
@@ -56,8 +58,8 @@ class StokesEstimation(QWidget):
         polariser_unit.layout().addWidget(dropdown_unit)
         polariser_unit.layout().setSpacing(0)
         self.dropdown_unit = dropdown_unit
-        
 
+        # layout of the "background" gui input
         bkgnd_container = QWidget()
         bkgnd_container.setLayout(QHBoxLayout())
         bkgnd_container.setMaximumHeight(40)
@@ -68,8 +70,8 @@ class StokesEstimation(QWidget):
         lineedit_bkgnd.textChanged.connect(self._on_value_change_bkgnd)
         bkgnd_container.layout().addWidget(lineedit_bkgnd)
         self.lineedit_bkgnd = lineedit_bkgnd
-        
 
+        # layout of the "interpolation method" gui input
         method_choice = QWidget()
         method_choice.setLayout(QHBoxLayout())
         lbl_method = QLabel("Method: ")
@@ -81,7 +83,17 @@ class StokesEstimation(QWidget):
         method_choice.layout().addWidget(dropdown_method)
         method_choice.layout().setSpacing(0)
         self.dropdown_method = dropdown_method
-
+        
+        # group all settings gui elements in a box
+        settingsGroupBox = QGroupBox("Settings")
+        settings_box = QVBoxLayout()
+        settings_box.addWidget(polariser_unit)        
+        settings_box.addWidget(method_choice)
+        settings_box.addWidget(bkgnd_container)
+        settings_box.addStretch(1)
+        settingsGroupBox.setLayout(settings_box)
+        
+        
         btn_channels = QPushButton("Calculate channels")
         btn_channels.clicked.connect(self._on_click_channels)
         
@@ -101,17 +113,89 @@ class StokesEstimation(QWidget):
         btn_aolp_dolp.layout().addWidget(btn_aolp)
         btn_aolp_dolp.layout().addWidget(btn_dolp)
         
+        # group all basic processing gui elements in a box
+        basicProcessingGroupBox = QGroupBox("Basic processing")
+        basic_processing_box = QVBoxLayout()
+        basic_processing_box.addWidget(btn_quadview)
+        basic_processing_box.addWidget(btn_channels)        
+        basic_processing_box.addWidget(btn_stokes)
+        basic_processing_box.addWidget(btn_aolp_dolp)
+        basic_processing_box.addStretch(1)
+        basicProcessingGroupBox.setLayout(basic_processing_box)
+        
+        
+        btn_hsvmap = QPushButton("Calculate HSVmap")
+        btn_hsvmap.clicked.connect(self._on_click_hsvmap)
+        
+        btn_dolpmap = QPushButton("Calculate DoLPmap")
+        btn_dolpmap.clicked.connect(self._on_click_dolpmap)
+        
+        # A container for S0 histogram plot
+        graph_container_s0_hist = QWidget()
+        self.s0_hist_widget = pg.GraphicsLayoutWidget()
+        self.s0_hist_widget.setBackground(None)
+        graph_container_s0_hist.setMaximumHeight(100)
+        graph_container_s0_hist.setLayout(QVBoxLayout())
+        graph_container_s0_hist.layout().addWidget(self.s0_hist_widget)
+        
+        # A container for DoLP histogram plot
+        graph_container_dolp_hist = QWidget()
+        self.dolp_hist_widget = pg.GraphicsLayoutWidget()
+        self.dolp_hist_widget.setBackground(None)
+        graph_container_dolp_hist.setMaximumHeight(100)
+        graph_container_dolp_hist.setLayout(QVBoxLayout())
+        graph_container_dolp_hist.layout().addWidget(self.dolp_hist_widget)
+        
+        
+        # DoLP threshold slider
+        slider_dolp = QDoubleRangeSlider()
+        slider_dolp.setOrientation(Qt.Horizontal)
+        slider_dolp.setMinimum(0)
+        slider_dolp.setMaximum(1)
+        slider_dolp.setValue([0,1])
+        slider_dolp.setSingleStep(0.0001)
+        lbl_slider_dolp = QLabel()
+        lbl_slider_dolp.setText("DoLP threshold:")
+        lbl_slider_dolp.setAlignment(Qt.AlignCenter)
+        lbl_slider_dolp.setBuddy(slider_dolp)
+        #slider_dolp.valueChanged.connect(self._slider_dolp_changed)
+        self.slider_dolp = slider_dolp
+
+        # S0 threshold slider
+        slider_s0 = QDoubleRangeSlider()
+        slider_s0.setOrientation(Qt.Horizontal)
+        slider_s0.setMinimum(0)
+        slider_s0.setMaximum(1)
+        slider_s0.setValue([0,1])
+        slider_s0.setSingleStep(0.0001)
+        lbl_slider_s0 = QLabel()
+        lbl_slider_s0.setText("S0 threshold:")
+        lbl_slider_s0.setAlignment(Qt.AlignCenter)
+        lbl_slider_s0.setBuddy(slider_s0)
+        #slider_s0.valueChanged.connect(self._slider_s0_changed)
+        self.slider_s0 = slider_s0
+        
+        # group all colourmap processing gui elements in a box
+        colmapProcessingGroupBox = QGroupBox("Colourmap rendering")
+        basic_processing_box = QVBoxLayout()
+        basic_processing_box.addWidget(btn_hsvmap)        
+        basic_processing_box.addWidget(btn_dolpmap)
+        basic_processing_box.addWidget(graph_container_s0_hist)
+        basic_processing_box.addWidget(slider_s0)
+        basic_processing_box.addWidget(graph_container_dolp_hist)
+        basic_processing_box.addWidget(slider_dolp)
+        basic_processing_box.addStretch(1)
+        colmapProcessingGroupBox.setLayout(basic_processing_box)
+        
         self.setLayout(QVBoxLayout())
         #self.layout().setSpacing(0)
 
-        self.layout().addWidget(polariser_unit)        
-        self.layout().addWidget(method_choice)
-        self.layout().addWidget(bkgnd_container)
+        self.layout().addWidget(settingsGroupBox)
+        self.layout().addWidget(basicProcessingGroupBox)
+        self.layout().addWidget(colmapProcessingGroupBox)
 
-        self.layout().addWidget(btn_quadview)
-        self.layout().addWidget(btn_channels)
-        self.layout().addWidget(btn_stokes)
-        self.layout().addWidget(btn_aolp_dolp)
+        self.draw_s0_histogram()
+        self.draw_dolp_histogram()
 
     
     def _on_value_change_bkgnd(self):
@@ -169,29 +253,196 @@ class StokesEstimation(QWidget):
             S1 = I0 - I90
             S2 = I45 - I135
             max_s0 = np.max(S0)
-            self.viewer.add_image(S0, contrast_limits=[0, max_s0])        
-            self.viewer.add_image(S1, contrast_limits=[-max_s0, max_s0])        
-            self.viewer.add_image(S2, contrast_limits=[-max_s0, max_s0])       
+            
+            # add a new S0 layer (or replace the data is one was already open)
+            if not self.check_if_s0_is_loaded():
+                self.viewer.add_image(S0, contrast_limits=[0, max_s0])    
+            else:
+                self.viewer.layers['S0'].data = S0
+            # add a new S1 layer (or replace the data is one was already open)
+            if not self.check_if_s1_is_loaded():
+                self.viewer.add_image(S1, contrast_limits=[-max_s0, max_s0])    
+            else:
+                self.viewer.layers['S1'].data = S1
+            # add a new S2 layer (or replace the data is one was already open)
+            if not self.check_if_s2_is_loaded():
+                self.viewer.add_image(S2, contrast_limits=[-max_s0, max_s0])    
+            else:
+                self.viewer.layers['S2'].data = S2
+     
             break
 
     def _on_click_aolp(self):
         """" Calculate the Angle of Linear Polarisation (AoLP) image from the
         S1 and S2 layers that are open in the napari viewer. Add the AoLP image
         to the napari viewer as a new layer."""
+        # calculate Stokes parameters and add as new layers
+        self._on_click_stokes()
+        # grab the data from the layers of S1 and S2
         s1 = self.viewer.layers['S1'].data
         s2 = self.viewer.layers['S2'].data
+        # calculate AoLP from S1 and S2
         AoLP = (1/2)*np.arctan2(s2,s1)
-        self.viewer.add_image(AoLP,contrast_limits=[-np.pi/2,np.pi/2])
+        # add a new AoLP layer (or replace the data is one was already open)
+        if not self.check_if_aolp_is_loaded():
+            self.viewer.add_image(AoLP,contrast_limits=[-np.pi/2,np.pi/2])
+        else:
+            self.viewer.layers['AoLP'].data = AoLP
         
     def _on_click_dolp(self):
         """" Calculate the Degree of Linear Polarisation (DoLP) image from the
         S0, S1 and S2 layers that are open in the napari viewer. Add the DoLP
         image to the napari viewer as a new layer."""
+        # calculate Stokes parameters and add as new layers
+        self._on_click_stokes()
+        # grab the data from the layers of S0, S1 and S2
         s0 = self.viewer.layers['S0'].data
         s1 = self.viewer.layers['S1'].data
         s2 = self.viewer.layers['S2'].data
-        DoLP = np.sqrt((s1**2 + s2**2)/(s0**2))
-        self.viewer.add_image(DoLP,contrast_limits=[0,1])
+        # calculate DoLP from S0, S1 and S2
+        DoLP = np.sqrt((s1*s1 + s2*s2)/(s0*s0))
+        # add a new DoLP layer (or replace the data is one was already open)
+        if not self.check_if_dolp_is_loaded():
+            self.viewer.add_image(DoLP,contrast_limits=[0,1])
+        else:
+            self.viewer.layers['DoLP'].data = DoLP
+        
+        
+    def _on_click_hsvmap(self):
+        
+        # calculate Stokes parameters and add as new layers
+        self._on_click_stokes()
+        # grab the data from the layers of S0, S1 and S2
+        s0 = self.viewer.layers['S0'].data
+        s1 = self.viewer.layers['S1'].data
+        s2 = self.viewer.layers['S2'].data
+        
+        # calculate AoLP from S1 and S2
+        AoLP = (1/2)*np.arctan2(s2,s1)
+        # add a new AoLP layer (or replace the data is one was already open)
+        if not self.check_if_aolp_is_loaded():
+            self.viewer.add_image(AoLP,contrast_limits=[-np.pi/2,np.pi/2])
+        else:
+            self.viewer.layers['AoLP'].data = AoLP
+        
+        # calculate DoLP from S0, S1 and S2
+        DoLP = np.sqrt((s1*s1 + s2*s2)/(s0*s0))
+        # add a new DoLP layer (or replace the data is one was already open)
+        if not self.check_if_dolp_is_loaded():
+            self.viewer.add_image(DoLP,contrast_limits=[0,1])
+        else:
+            self.viewer.layers['DoLP'].data = DoLP
+        
+        # arrange the hue, saturation and value channels
+        h = self.viewer.layers['AoLP'].data # hue
+        s = self.viewer.layers['DoLP'].data # saturation
+        v = self.viewer.layers['S0'].data # value
+        
+        # # get limits from gui
+        # s0_lims = self.slider_s0.value()
+        # dolp_lims = self.slider_dolp.value()
+        
+        s0_lims = (0,np.max(s0))
+        dolp_lims = (0,1)
+        
+        # scale parameters based on limits
+        h = (h + np.pi/2)/np.pi; # rescale [-pi/2, pi/2] to [0, 1]
+        s = (s - dolp_lims[0])/(dolp_lims[1] - dolp_lims[0]); # rescale DoLP
+        v = (v - s0_lims[0])/(s0_lims[1] - s0_lims[0]); # rescale DoLP
+        # make sure all values fall between 0 and 1
+        h[h < 0] = 0
+        h[h > 1] = 1
+        s[s < 0] = 0
+        s[s > 1] = 1
+        v[v < 0] = 0
+        v[v > 1] = 1
+        # convert hsv to rgb
+        numDim = len(h.shape) # number of dimensions of the dataset
+        hsv = np.stack([h,s,v],numDim) # stack the h, s and v channels along a new dimension
+        rgb = hsv_to_rgb(hsv) # convert hsv colourspace to rgb colourspace
+        rgb = rgb*255 # scale [0 1] to 8-bit [0 255]
+        HSVmap = rgb.astype(np.uint8) # convert to unsigned 8-bit integer values
+        HSVmap_R = HSVmap[...,0]
+        HSVmap_G = HSVmap[...,1]
+        HSVmap_B = HSVmap[...,2]
+        
+        # add new images for the 3 colour channels: HSVmap_R, HSVmap_G and HSVmap_B
+        if 'HSVmap_R' in self.viewer.layers: # if layer already open, replace data
+            self.viewer.layers['HSVmap_R'].data = HSVmap_R
+        else:
+            self.viewer.add_image(HSVmap_R,contrast_limits=[0,255],colormap="red",blending="additive",name="HSVmap_R")
+
+        if 'HSVmap_G' in self.viewer.layers: # if layer already open, replace data
+            self.viewer.layers['HSVmap_G'].data = HSVmap_G
+        else:
+            self.viewer.add_image(HSVmap_G,contrast_limits=[0,255],colormap="green",blending="additive",name="HSVmap_G")
+
+        if 'HSVmap_B' in self.viewer.layers: # if layer already open, replace data
+            self.viewer.layers['HSVmap_B'].data = HSVmap_B
+        else:
+            self.viewer.add_image(HSVmap_B,contrast_limits=[0,255],colormap="blue",blending="additive",name="HSVmap_B")
+        
+        # redraw the histograms
+        self.draw_s0_histogram()
+        self.draw_dolp_histogram()
+
+    def _on_click_dolpmap(self):
+        print("dolp dolp dolp")
+
+    def check_if_s0_is_loaded(self):
+        if 'S0' not in self.viewer.layers: return 0
+        else: return 1
+        
+    def check_if_s1_is_loaded(self):
+        if 'S1' not in self.viewer.layers: return 0
+        else: return 1
+        
+    def check_if_s2_is_loaded(self):
+        if 'S2' not in self.viewer.layers: return 0
+        else: return 1
+        
+    def check_if_dolp_is_loaded(self):
+        if 'DoLP' not in self.viewer.layers: return 0
+        else: return 1
+        
+    def check_if_aolp_is_loaded(self):
+        if 'AoLP' not in self.viewer.layers: return 0
+        else: return 1
+
+    def draw_s0_histogram(self):
+        # add a new plot to the s0_hist_widget or empty the old plot
+        if not hasattr(self, "plot_s0"):
+            self.plot_s0 = self.s0_hist_widget.addPlot()
+        else:
+            self.plot_s0.clear()
+            
+        if not self.check_if_s0_is_loaded():
+            s0 = np.asarray([0,1]) # make up some data if S0 is not open
+        else:
+            s0 = self.viewer.layers['S0'].data
+        # draw DoLP histogram
+        max_s0 = np.max(s0)
+        counts, binedges = np.histogram(s0,bins=100,range=(0.0,max_s0))
+        self.plot_s0.plot(binedges[0:-1],counts/np.max(counts),name='S0')
+        self.plot_s0.setXRange(0, max_s0, padding=0)
+        self.plot_s0.setYRange(0, 1, padding=0)
+        
+    def draw_dolp_histogram(self):
+        # add a new plot to the dolp_hist_widget or empty the old plot
+        if not hasattr(self, "plot_dolp"):
+            self.plot_dolp = self.dolp_hist_widget.addPlot()
+        else:
+            self.plot_dolp.clear()
+        
+        if not self.check_if_dolp_is_loaded():
+            dolp = np.asarray([0,1]) # make up some data if S0 is not open
+        else:
+            dolp = self.viewer.layers['DoLP'].data
+        # draw DoLP histogram
+        counts, binedges = np.histogram(dolp,bins=100,range=(0.0,1.0))
+        self.plot_dolp.plot(binedges[0:-1],counts/np.max(counts),name='DoLP')
+        self.plot_dolp.setXRange(0, 1, padding=0)
+        self.plot_dolp.setYRange(0, 1, padding=0)
 
 
 
@@ -410,99 +661,6 @@ class HSVmap(QWidget):
         else:
             self.viewer.add_image(HSVmap_B,contrast_limits=[0,255],colormap="blue",blending="additive",name="HSVmap_B")
         # =====================================================================
-
-
-class DoLPmap(QWidget):
-
-    def __init__(self, napari_viewer):
-        super().__init__()
-        self.viewer = napari_viewer
-                
-        slider_dolp = QDoubleRangeSlider()
-        slider_dolp.setOrientation(Qt.Horizontal)
-        slider_dolp.setMinimum(0)
-        slider_dolp.setMaximum(1)
-        slider_dolp.setValue([0,1])
-        slider_dolp.setSingleStep(0.001)
-        lbl_slider_dolp = QLabel()
-        lbl_slider_dolp.setText("DoLP threshold:")
-        lbl_slider_dolp.setAlignment(Qt.AlignCenter)
-        lbl_slider_dolp.setBuddy(slider_dolp)
-        
-        slider_s0 = QDoubleRangeSlider()
-        slider_s0.setOrientation(Qt.Horizontal)
-        slider_s0.setMinimum(0)
-        slider_s0.setMaximum(1)
-        slider_s0.setValue([0,1])
-        slider_s0.setSingleStep(0.01)
-        lbl_slider_s0 = QLabel()
-        lbl_slider_s0.setText("S0 threshold:")
-        lbl_slider_s0.setAlignment(Qt.AlignCenter)
-        lbl_slider_s0.setBuddy(slider_s0)
-        
-        btn_hsv_map = QPushButton("Calculate HSVmap")
-        btn_hsv_map.clicked.connect(self._on_click_hsvmap)
-        
-        self.setLayout(QVBoxLayout())
-        
-        self.layout().addWidget(btn_hsv_map)
-        self.layout().addWidget(lbl_slider_dolp)
-        self.layout().addWidget(slider_dolp)
-        self.layout().addWidget(lbl_slider_s0)
-        self.layout().addWidget(slider_s0)
-       
-    #def _on_click_prepare_hsvmap(self):
-    #    # generate 8-bit versions of AoLP and DoLP for faster processing
-    
-    def _on_click_hsvmap(self):
-        
-        # get Stokes parameter images (assumed to be already open)
-        s0 = self.viewer.layers['S0'].data
-        s1 = self.viewer.layers['S1'].data
-        s2 = self.viewer.layers['S2'].data
-        
-        # calculate AoLP (SHOULD CHECK IF ALREADY OPEN)
-        AoLP = (1/2)*np.arctan2(s2,s1)
-        self.viewer.add_image(AoLP,contrast_limits=[-np.pi/2,np.pi/2])
-        
-        # calculate DoLP (SHOULD CHECK IF ALREADY OPEN)
-        DoLP = np.sqrt((s1*s1 + s2*s2)/(s0*s0))
-        self.viewer.add_image(DoLP,contrast_limits=[0,1])
-            
-        h = self.viewer.layers['AoLP'].data
-        s = self.viewer.layers['DoLP'].data
-        v = self.viewer.layers['S0'].data
-        
-        h = (h + np.pi/2)/np.pi; # rescale [-pi/2, pi/2]to [0, 1]
-        v = (v - np.min(v))/(np.max(v) - np.min(v)); # rescale intensity to [0 1]
-        
-        numDim = len(h.shape) # number of dimensions of the dataset
-        hsv = np.stack([h,s,v],numDim) # stack
-        rgb = hsv_to_rgb(hsv)
-        
-        hsv_r = rgb[..., 0]*255
-        hsv_g = rgb[..., 1]*255
-        hsv_b = rgb[..., 2]*255
-        
-        hsv_r = hsv_r.astype(np.uint8)
-        hsv_g = hsv_g.astype(np.uint8)
-        hsv_b = hsv_b.astype(np.uint8)
-        
-        # hide all layers
-        for layer in self.viewer.layers.selection:
-            layer.visible = False
-        
-        # add new images for the 3 colour channels
-        self.viewer.add_image(hsv_r,contrast_limits=[0,255],colormap="red",blending="additive")
-        self.viewer.add_image(hsv_g,contrast_limits=[0,255],colormap="green",blending="additive")
-        self.viewer.add_image(hsv_b,contrast_limits=[0,255],colormap="blue",blending="additive")
-        
-    def selected_image_layers(self):
-        return [
-            layer
-            for layer in self.viewer.layers.selection
-            if isinstance(layer, napari.layers.Image)
-        ]
 
 
 class SetVoxelSize(QWidget):
