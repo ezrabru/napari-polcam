@@ -5,7 +5,7 @@ from ._sample_data import make_sample_data
 from ._writer import write_multiple, write_single_image
 
 from ._widget import SetVoxelSize
-from ._widget import StokesEstimation, HSVmap, DoLPmap
+from ._widget import StokesEstimation, HSVmap
 
 __all__ = (
     "napari_get_reader",
@@ -14,6 +14,5 @@ __all__ = (
     "make_sample_data",
     "StokesEstimation",
     "HSVmap",
-    "DoLPmap",
     "SetVoxelSize"
 )
