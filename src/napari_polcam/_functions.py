@@ -73,10 +73,8 @@ class PolarisationCameraImage():
     
     def convert_unprocessed(self):
         if self.method == 'None':
-            print(f"method: {self.method}")
             I0,I45,I90,I135 = self.estimate_channels_no_interpolation()
         elif self.method == 'Cubic spline interpolation':
-            print(f"method: {self.method}")
             I0,I45,I90,I135 = self.interpolate_channels()
         else:
             print('Unexpected value for input variable "method" in method "convert_unprocessed" in class "PolarisationCameraImage".')

@@ -76,8 +76,8 @@ class StokesEstimation(QWidget):
         method_choice.layout().addWidget(lbl_method)
         dropdown_method = QComboBox()
         dropdown_method.addItem("Cubic spline interpolation")
-        dropdown_method.addItem("None")
         #dropdown_method.addItem("Fourier")
+        dropdown_method.addItem("None")
         method_choice.layout().addWidget(dropdown_method)
         method_choice.layout().setSpacing(0)
         self.dropdown_method = dropdown_method
@@ -112,6 +112,7 @@ class StokesEstimation(QWidget):
         self.layout().addWidget(btn_channels)
         self.layout().addWidget(btn_stokes)
         self.layout().addWidget(btn_aolp_dolp)
+
     
     def _on_value_change_bkgnd(self):
         self.offset = float(self.lineedit_bkgnd.text())
@@ -376,38 +377,40 @@ class HSVmap(QWidget):
         numDim = len(h.shape) # number of dimensions of the dataset
         hsv = np.stack([h,s,v],numDim) # stack the h, s and v channels along a new dimension
         rgb = hsv_to_rgb(hsv) # convert hsv colourspace to rgb colourspace
-                
-        # scale to 8-bit colour (0-255)
-        hsv_r = rgb[..., 0]*255
-        hsv_g = rgb[..., 1]*255
-        hsv_b = rgb[..., 2]*255
+        rgb = rgb*255
+        HSVmap = rgb.astype(np.uint8)
         
-        pbr.set_description("Updating layers...")
-        pbr.update(1)
+        HSVmap_R = HSVmap[...,0]
+        HSVmap_G = HSVmap[...,1]
+        HSVmap_B = HSVmap[...,2]
         
+        # # =====================================================================
+        # # THIS ONLY WORKS FOR 2D DATA AT THIS POINT
+        # if 'HSVmap' in self.viewer.layers: # if layer already open, replace data
+        #     self.viewer.layers['HSVmap'].data = HSVmap
+        # else:
+        #     self.viewer.add_image(HSVmap,rgb=True,name="HSVmap")     
+        # # =====================================================================
+            
+        # =====================================================================
+        # THIS WORKS FOR ANY DIMENSION (BUT USERS CAN FIDDLE WITH INDIVIDUAL CHANNELS)
         # add new images for the 3 colour channels: HSVmap_R, HSVmap_G and HSVmap_B
-        if 'HSVmap_R' in self.viewer.layers:
-            # if layer with the name 'HSVmap_R' is already open, replace the data in it
-            self.viewer.layers['HSVmap_R'].data = hsv_r.astype(np.uint8)
-        else: # if no layer with the name 'HSVmap_R' exists, make it
-            self.viewer.add_image(hsv_r.astype(np.uint8),contrast_limits=[0,255],\
-                                  colormap="red",blending="additive",name="HSVmap_R")
-        if 'HSVmap_G' in self.viewer.layers:
-            # if layer with the name 'HSVmap_G' is already open, replace the data in it
-            self.viewer.layers['HSVmap_G'].data = hsv_g.astype(np.uint8)
-        else: # if no layer with the name 'HSVmap_G' exists, make it
-            self.viewer.add_image(hsv_g.astype(np.uint8),contrast_limits=[0,255],\
-                                  colormap="green",blending="additive",name="HSVmap_G")
-        if 'HSVmap_B' in self.viewer.layers:
-            # if layer with the name 'HSVmap_B' is already open, replace the data in it
-            self.viewer.layers['HSVmap_B'].data = hsv_b.astype(np.uint8)
-        else: # if no layer with the name 'HSVmap_B' exists, make it
-            self.viewer.add_image(hsv_b.astype(np.uint8),contrast_limits=[0,255],\
-                                  colormap="blue",blending="additive",name="HSVmap_B")
-                
-        #show_info("Done!")
-        pbr.close()
-        
+        if 'HSVmap_R' in self.viewer.layers: # if layer already open, replace data
+            self.viewer.layers['HSVmap_R'].data = HSVmap_R
+        else:
+            self.viewer.add_image(HSVmap_R,contrast_limits=[0,255],colormap="red",blending="additive",name="HSVmap_R")
+
+        if 'HSVmap_G' in self.viewer.layers: # if layer already open, replace data
+            self.viewer.layers['HSVmap_G'].data = HSVmap_G
+        else:
+            self.viewer.add_image(HSVmap_G,contrast_limits=[0,255],colormap="green",blending="additive",name="HSVmap_G")
+
+        if 'HSVmap_B' in self.viewer.layers: # if layer already open, replace data
+            self.viewer.layers['HSVmap_B'].data = HSVmap_B
+        else:
+            self.viewer.add_image(HSVmap_B,contrast_limits=[0,255],colormap="blue",blending="additive",name="HSVmap_B")
+        # =====================================================================
+
 
 class DoLPmap(QWidget):
 
