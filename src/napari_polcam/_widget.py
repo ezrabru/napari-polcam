@@ -90,7 +90,7 @@ class StokesEstimation(QWidget):
         # checkbox for showing intermediate results ===========================
         checkbox_show_intermediate_results = QCheckBox("Show intermediate results as new layers")
         checkbox_show_intermediate_results.setCheckState(False)
-        
+        self.checkbox_show_intermediate_results = checkbox_show_intermediate_results
         
         # group all settings gui elements in a box ============================
         settingsGroupBox = QGroupBox("Settings")
@@ -251,8 +251,8 @@ class StokesEstimation(QWidget):
         self.layout().addWidget(colmapProcessingGroupBox)
         
         # intialise the histograms
-        self.draw_s0_histogram()
-        self.draw_dolp_histogram()
+        self.draw_s0_histogram([0,1]) # initialise histogram plot
+        self.draw_dolp_histogram([0,1]) # initialise histogram plot
 
     
     def _on_value_change_bkgnd(self):
@@ -270,6 +270,7 @@ class StokesEstimation(QWidget):
             quadview = pci.unprocessed_to_quadview() # calculate quadview
             self.viewer.add_image(quadview) # display quadview as new layer
             break
+        return quadview
     
     def _on_click_channels(self):
         """" Estimate the 4 intensity channels from an unprocessed polarisation
@@ -288,8 +289,10 @@ class StokesEstimation(QWidget):
             self.viewer.add_image(I90, contrast_limits=[I_min, I_max])        
             self.viewer.add_image(I135, contrast_limits=[I_min, I_max])
             break
+        
+        return I0, I45, I90, I135
     
-    def _on_click_stokes(self):
+    def _on_click_stokes(self,add_to_viewer=True):
         """" Estimate the Stokes parameter images from an unprocessed polarisation
         camera image. Add three new layers (S0, S1 and S2) to the napari viewer.
         Repeat for each layer that was selected. """
@@ -311,33 +314,37 @@ class StokesEstimation(QWidget):
             S2 = I45 - I135
             max_s0 = np.max(S0)
             
-            # add a new S0 layer (or replace the data is one was already open)
-            if not self.check_if_s0_is_loaded():
-                self.viewer.add_image(S0, contrast_limits=[0, max_s0])    
-            else:
-                self.viewer.layers['S0'].data = S0
-            # add a new S1 layer (or replace the data is one was already open)
-            if not self.check_if_s1_is_loaded():
-                self.viewer.add_image(S1, contrast_limits=[-max_s0, max_s0])    
-            else:
-                self.viewer.layers['S1'].data = S1
-            # add a new S2 layer (or replace the data is one was already open)
-            if not self.check_if_s2_is_loaded():
-                self.viewer.add_image(S2, contrast_limits=[-max_s0, max_s0])    
-            else:
-                self.viewer.layers['S2'].data = S2
-     
+            if add_to_viewer:
+                # add a new S0 layer (or replace the data is one was already open)
+                if not self.check_if_s0_is_loaded():
+                    self.viewer.add_image(S0, contrast_limits=[0, max_s0])    
+                else:
+                    self.viewer.layers['S0'].data = S0
+                # add a new S1 layer (or replace the data is one was already open)
+                if not self.check_if_s1_is_loaded():
+                    self.viewer.add_image(S1, contrast_limits=[-max_s0, max_s0])    
+                else:
+                    self.viewer.layers['S1'].data = S1
+                # add a new S2 layer (or replace the data is one was already open)
+                if not self.check_if_s2_is_loaded():
+                    self.viewer.add_image(S2, contrast_limits=[-max_s0, max_s0])    
+                else:
+                    self.viewer.layers['S2'].data = S2
             break
+        
+        return S0, S1, S2
+                     
 
-    def _on_click_aolp(self):
+    def _on_click_aolp(self,add_to_viewer=True):
         """" Calculate the Angle of Linear Polarisation (AoLP) image from the
         S1 and S2 layers that are open in the napari viewer. Add the AoLP image
         to the napari viewer as a new layer."""
-        # calculate Stokes parameters and add as new layers
-        self._on_click_stokes()
-        # grab the data from the layers of S1 and S2
-        s1 = self.viewer.layers['S1'].data
-        s2 = self.viewer.layers['S2'].data
+        # calculate Stokes parameters
+        if self.checkbox_show_intermediate_results.checkState(): # if checked
+            s0, s1, s2 = self._on_click_stokes() # will add as new layers to napari viewer
+        else: # if not checked
+            s0, s1, s2 = self._on_click_stokes(add_to_viewer=False)
+            
         # calculate AoLP from S1 and S2
         AoLP = (1/2)*np.arctan2(s2,s1)
         # add a new AoLP layer (or replace the data is one was already open)
@@ -345,17 +352,19 @@ class StokesEstimation(QWidget):
             self.viewer.add_image(AoLP,contrast_limits=[-np.pi/2,np.pi/2])
         else:
             self.viewer.layers['AoLP'].data = AoLP
+            
+        return AoLP
         
-    def _on_click_dolp(self):
+    def _on_click_dolp(self,add_to_viewer=True):
         """" Calculate the Degree of Linear Polarisation (DoLP) image from the
         S0, S1 and S2 layers that are open in the napari viewer. Add the DoLP
         image to the napari viewer as a new layer."""
-        # calculate Stokes parameters and add as new layers
-        self._on_click_stokes()
-        # grab the data from the layers of S0, S1 and S2
-        s0 = self.viewer.layers['S0'].data
-        s1 = self.viewer.layers['S1'].data
-        s2 = self.viewer.layers['S2'].data
+        # calculate Stokes parameters
+        if self.checkbox_show_intermediate_results.checkState(): # if checked
+            s0, s1, s2 = self._on_click_stokes() # will add as new layers to napari viewer
+        else: # if not checked
+            s0, s1, s2 = self._on_click_stokes(add_to_viewer=False)
+        
         # calculate DoLP from S0, S1 and S2
         DoLP = np.sqrt((s1*s1 + s2*s2)/(s0*s0))
         # add a new DoLP layer (or replace the data is one was already open)
@@ -363,6 +372,8 @@ class StokesEstimation(QWidget):
             self.viewer.add_image(DoLP,contrast_limits=[0,1])
         else:
             self.viewer.layers['DoLP'].data = DoLP
+        
+        return DoLP
     
     def _on_click_btn_calculate_colmap(self):
         if self.dropdown_colmap.currentText() == 'HSVmap':
@@ -371,12 +382,11 @@ class StokesEstimation(QWidget):
             self._on_click_dolpmap(None,None)
         
     def _on_click_hsvmap(self,lim_s0,lim_dolp):
-        # calculate Stokes parameters and add as new layers
-        self._on_click_stokes()
-        # grab the data from the layers of S0, S1 and S2
-        s0 = self.viewer.layers['S0'].data
-        s1 = self.viewer.layers['S1'].data
-        s2 = self.viewer.layers['S2'].data
+        # calculate Stokes parameters
+        if self.checkbox_show_intermediate_results.checkState(): # if checked
+            s0, s1, s2 = self._on_click_stokes() # will add as new layers to napari viewer
+        else: # if not checked
+            s0, s1, s2 = self._on_click_stokes(add_to_viewer=False)
         
         if lim_s0 == None: # if no input limits are given
             # update the min/max limits of the s0 box
@@ -393,26 +403,27 @@ class StokesEstimation(QWidget):
         self.lineedit_s0_min.setText(str(round(s0_min)))
         self.lineedit_s0_max.setText(str(round(s0_max)))
         
-        # calculate AoLP from S1 and S2
+        # calculate AoLP and DoLP from Stokes parameters
         AoLP = (1/2)*np.arctan2(s2,s1)
-        # add a new AoLP layer (or replace the data is one was already open)
-        if not self.check_if_aolp_is_loaded():
-            self.viewer.add_image(AoLP,contrast_limits=[-np.pi/2,np.pi/2])
-        else:
-            self.viewer.layers['AoLP'].data = AoLP
-        
-        # calculate DoLP from S0, S1 and S2
         DoLP = np.sqrt((s1*s1 + s2*s2)/(s0*s0))
-        # add a new DoLP layer (or replace the data is one was already open)
-        if not self.check_if_dolp_is_loaded():
-            self.viewer.add_image(DoLP,contrast_limits=[0,1])
-        else:
-            self.viewer.layers['DoLP'].data = DoLP
+
+        if self.checkbox_show_intermediate_results.checkState(): # if checked
+            # add a new AoLP layer (or replace the data is one was already open)
+            if not self.check_if_aolp_is_loaded():
+                self.viewer.add_image(AoLP,contrast_limits=[-np.pi/2,np.pi/2])
+            else:
+                self.viewer.layers['AoLP'].data = AoLP
+        
+            # add a new DoLP layer (or replace the data is one was already open)
+            if not self.check_if_dolp_is_loaded():
+                self.viewer.add_image(DoLP,contrast_limits=[0,1])
+            else:
+                self.viewer.layers['DoLP'].data = DoLP
         
         # arrange the hue, saturation and value channels
-        h = self.viewer.layers['AoLP'].data # hue
-        s = self.viewer.layers['DoLP'].data # saturation
-        v = self.viewer.layers['S0'].data # value
+        h = AoLP # hue
+        s = DoLP # saturation
+        v = s0 # value
         
         # scale parameters based on limits
         h = (h + np.pi/2)/np.pi; # rescale [-pi/2, pi/2] to [0, 1]
@@ -452,16 +463,15 @@ class StokesEstimation(QWidget):
             self.viewer.add_image(HSVmap_B,contrast_limits=[0,255],colormap="blue",blending="additive",name="HSVmap_B")
         
         # redraw the histograms
-        self.draw_s0_histogram()
-        self.draw_dolp_histogram()
+        self.draw_s0_histogram(s0)
+        self.draw_dolp_histogram(DoLP)
 
     def _on_click_dolpmap(self,lim_s0,lim_dolp):
-        # calculate Stokes parameters and add as new layers
-        self._on_click_stokes()
-        # grab the data from the layers of S0, S1 and S2
-        s0 = self.viewer.layers['S0'].data
-        s1 = self.viewer.layers['S1'].data
-        s2 = self.viewer.layers['S2'].data
+        # calculate Stokes parameters
+        if self.checkbox_show_intermediate_results.checkState(): # if checked
+            s0, s1, s2 = self._on_click_stokes() # will add as new layers to napari viewer
+        else: # if not checked
+            s0, s1, s2 = self._on_click_stokes(add_to_viewer=False)
         
         if lim_s0 == None: # if no input limits are given
             # update the min/max limits of the s0 box
@@ -480,11 +490,12 @@ class StokesEstimation(QWidget):
         
         # calculate DoLP from S0, S1 and S2
         DoLP = np.sqrt((s1*s1 + s2*s2)/(s0*s0))
-        # add a new DoLP layer (or replace the data is one was already open)
-        if not self.check_if_dolp_is_loaded():
-            self.viewer.add_image(DoLP,contrast_limits=[0,1])
-        else:
-            self.viewer.layers['DoLP'].data = DoLP
+        if self.checkbox_show_intermediate_results.checkState(): # if checked
+            # add a new DoLP layer (or replace the data is one was already open)
+            if not self.check_if_dolp_is_loaded():
+                self.viewer.add_image(DoLP,contrast_limits=[0,1])
+            else:
+                self.viewer.layers['DoLP'].data = DoLP
         
         # scale parameters based on limits
         DoLP = (DoLP - dolp_min)/(dolp_max - dolp_min); # rescale DoLP
@@ -529,8 +540,8 @@ class StokesEstimation(QWidget):
             self.viewer.add_image(DoLPmap_B,contrast_limits=[0,255],colormap="blue",blending="additive",name="DoLPmap_B")
         
         # redraw the histograms
-        self.draw_s0_histogram()
-        self.draw_dolp_histogram()
+        self.draw_s0_histogram(s0)
+        self.draw_dolp_histogram(DoLP)
     
     def _on_click_rerender_colmap(self):
         if self.dropdown_colmap.currentText() == 'HSVmap':
@@ -555,8 +566,6 @@ class StokesEstimation(QWidget):
         lim_s0 = (s0_min, s0_max)
         lim_dolp = (dolp_min, dolp_max)
         self._on_click_dolpmap(lim_s0,lim_dolp)
-
-
          
     def check_if_s0_is_loaded(self):
         if 'S0' not in self.viewer.layers: return 0
@@ -578,38 +587,30 @@ class StokesEstimation(QWidget):
         if 'AoLP' not in self.viewer.layers: return 0
         else: return 1
 
-    def draw_s0_histogram(self):
+    def draw_s0_histogram(self,S0):
         # add a new plot to the s0_hist_widget or empty the old plot
         if not hasattr(self, "plot_s0"):
             self.plot_s0 = self.s0_hist_widget.addPlot()
         else:
             self.plot_s0.clear()
-            
-        if not self.check_if_s0_is_loaded():
-            s0 = np.asarray([0,1]) # make up some data if S0 is not open
-        else:
-            s0 = self.viewer.layers['S0'].data
+
         # draw DoLP histogram
-        max_s0 = np.max(s0)
-        counts, binedges = np.histogram(s0,bins=100,range=(0.0,max_s0))
+        max_s0 = np.max(S0)
+        counts, binedges = np.histogram(S0,bins=100,range=(0.0,max_s0))
         self.plot_s0.plot(binedges[0:-1],counts/np.max(counts),name='S0')
         self.plot_s0.setXRange(0, max_s0, padding=0)
         self.plot_s0.setYRange(0, 1, padding=0)
         self.plot_s0.setLabel('bottom', "S0") # add x-axis label
         
-    def draw_dolp_histogram(self):
+    def draw_dolp_histogram(self,DoLP):
         # add a new plot to the dolp_hist_widget or empty the old plot
         if not hasattr(self, "plot_dolp"):
             self.plot_dolp = self.dolp_hist_widget.addPlot()
         else:
             self.plot_dolp.clear()
         
-        if not self.check_if_dolp_is_loaded():
-            dolp = np.asarray([0,1]) # make up some data if S0 is not open
-        else:
-            dolp = self.viewer.layers['DoLP'].data
         # draw DoLP histogram
-        counts, binedges = np.histogram(dolp,bins=100,range=(0.0,1.0))
+        counts, binedges = np.histogram(DoLP,bins=100,range=(0.0,1.0))
         self.plot_dolp.plot(binedges[0:-1],counts/np.max(counts),name='DoLP')
         self.plot_dolp.setXRange(0, 1, padding=0)
         self.plot_dolp.setYRange(0, 1, padding=0)
