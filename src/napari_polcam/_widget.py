@@ -8,7 +8,7 @@ see: https://napari.org/stable/plugins/guides.html?#widgets
 
 import numpy as np
 from napari.utils.notifications import show_info
-from napari.utils import progress
+#from napari.utils import progress
 import pyqtgraph as pg
 
 from matplotlib.colors import hsv_to_rgb
@@ -24,7 +24,8 @@ from qtpy.QtWidgets import (
     QPushButton,
     QLabel,
     QComboBox,  
-    QGroupBox
+    QGroupBox,
+    QCheckBox
     )
 
 from qtpy.QtCore import Qt
@@ -135,15 +136,20 @@ class StokesEstimation(QWidget):
         # AoLP/DoLP/S0 HSV colourmap rendering group 
         # =====================================================================
         
+        colmap_choice_container = QWidget()
+        colmap_choice_container.setLayout(QHBoxLayout())
+        lbl_colmap_choice = QLabel("Colourmap: ")
+        colmap_choice_container.layout().addWidget(lbl_colmap_choice)
+        
         dropdown_colmap = QComboBox()
         dropdown_colmap.addItem("HSVmap")
         dropdown_colmap.addItem("DoLPmap")
         self.dropdown_colmap = dropdown_colmap
-        
+        colmap_choice_container.layout().addWidget(dropdown_colmap)
+
         btn_calculate_colmap = QPushButton("Calculate colourmap")
         btn_calculate_colmap.clicked.connect(self._on_click_btn_calculate_colmap)
-        
-        
+                
         
         # histogram plots =====================================================
         graph_container_hist = QWidget()
@@ -217,7 +223,7 @@ class StokesEstimation(QWidget):
         # group all colourmap processing gui elements in a box ================
         colmapProcessingGroupBox = QGroupBox("Colourmap rendering")
         basic_processing_box = QVBoxLayout()
-        basic_processing_box.addWidget(dropdown_colmap)
+        basic_processing_box.addWidget(colmap_choice_container)
         basic_processing_box.addWidget(btn_calculate_colmap)        
         basic_processing_box.addWidget(graph_container_hist)
         basic_processing_box.addWidget(s0_limits_container)
