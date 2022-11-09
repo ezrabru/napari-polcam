@@ -8,6 +8,7 @@ see: https://napari.org/stable/plugins/guides.html?#widgets
 
 import numpy as np
 from napari.utils.notifications import show_info
+from napari.experimental import link_layers
 #from napari.utils import progress
 import pyqtgraph as pg
 
@@ -462,6 +463,10 @@ class StokesEstimation(QWidget):
         else:
             self.viewer.add_image(HSVmap_B,contrast_limits=[0,255],colormap="blue",blending="additive",name="HSVmap_B")
         
+        # link the internal napari contrast limits settings between the layes
+        layers_to_link = [self.viewer.layers['HSVmap_R'],self.viewer.layers['HSVmap_G'],self.viewer.layers['HSVmap_B']]
+        link_layers(layers_to_link, ('contrast_limits', 'gamma', 'opacity'))
+        
         # redraw the histograms
         self.draw_s0_histogram(s0)
         self.draw_dolp_histogram(DoLP)
@@ -538,6 +543,10 @@ class StokesEstimation(QWidget):
             self.viewer.layers['DoLPmap_B'].data = DoLPmap_B
         else:
             self.viewer.add_image(DoLPmap_B,contrast_limits=[0,255],colormap="blue",blending="additive",name="DoLPmap_B")
+        
+        # link the internal napari contrast limits settings between the layes
+        layers_to_link = [self.viewer.layers['DoLPmap_R'],self.viewer.layers['DoLPmap_G'],self.viewer.layers['DoLPmap_B']]
+        link_layers(layers_to_link, ('contrast_limits', 'gamma', 'opacity'))
         
         # redraw the histograms
         self.draw_s0_histogram(s0)
