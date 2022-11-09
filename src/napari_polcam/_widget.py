@@ -87,12 +87,18 @@ class StokesEstimation(QWidget):
         method_choice.layout().addWidget(dropdown_method)
         self.dropdown_method = dropdown_method
         
+        # checkbox for showing intermediate results ===========================
+        checkbox_show_intermediate_results = QCheckBox("Show intermediate results as new layers")
+        checkbox_show_intermediate_results.setCheckState(False)
+        
+        
         # group all settings gui elements in a box ============================
         settingsGroupBox = QGroupBox("Settings")
         settings_box = QVBoxLayout()
         settings_box.addWidget(polariser_unit)        
         settings_box.addWidget(method_choice)
         settings_box.addWidget(bkgnd_container)
+        settings_box.addWidget(checkbox_show_intermediate_results)
         settings_box.addStretch(1)
         settings_box.setSpacing(0)
         settingsGroupBox.setLayout(settings_box)
