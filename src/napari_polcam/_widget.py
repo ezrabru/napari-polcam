@@ -172,8 +172,8 @@ class StokesEstimation(QWidget):
         lineedit_dolp_max = QLineEdit()
         lineedit_dolp_min.setText("0.0")
         lineedit_dolp_max.setText("1.0")
-        lineedit_dolp_min.textChanged.connect(self._lineedit_dolp_min_changed)
-        lineedit_dolp_max.textChanged.connect(self._lineedit_dolp_max_changed)
+        ##lineedit_dolp_min.textChanged.connect(self._lineedit_dolp_min_changed)
+        ##lineedit_dolp_max.textChanged.connect(self._lineedit_dolp_max_changed)
         self.lineedit_dolp_min = lineedit_dolp_min
         self.lineedit_dolp_max = lineedit_dolp_max
         # combine everything in the container
@@ -194,8 +194,8 @@ class StokesEstimation(QWidget):
         lineedit_s0_max = QLineEdit()
         lineedit_s0_min.setText("0.0")
         lineedit_s0_max.setText("1.0")
-        lineedit_s0_min.textChanged.connect(self._lineedit_s0_min_changed)
-        lineedit_s0_max.textChanged.connect(self._lineedit_s0_max_changed)
+        ##lineedit_s0_min.textChanged.connect(self._lineedit_s0_min_changed)
+        ##lineedit_s0_max.textChanged.connect(self._lineedit_s0_max_changed)
         self.lineedit_s0_min = lineedit_s0_min
         self.lineedit_s0_max = lineedit_s0_max
         # combine everything in the container
@@ -212,7 +212,7 @@ class StokesEstimation(QWidget):
         label_rerender_colmap.setText("Rerender with new min/max limits:")
         label_rerender_colmap.setAlignment(Qt.AlignCenter)
         btn_rerender_colmap = QPushButton("Rerender map")
-        btn_rerender_colmap.clicked.connect(self._on_click_rerender_hsvmap)
+        btn_rerender_colmap.clicked.connect(self._on_click_rerender_colmap)
         
         # group all colourmap processing gui elements in a box ================
         colmapProcessingGroupBox = QGroupBox("Colourmap rendering")
@@ -356,7 +356,7 @@ class StokesEstimation(QWidget):
         if self.dropdown_colmap.currentText() == 'HSVmap':
             self._on_click_hsvmap(None,None)
         elif self.dropdown_colmap.currentText() == 'DoLPmap':
-            self._on_click_dolpmap()
+            self._on_click_dolpmap(None,None)
         
     def _on_click_hsvmap(self,lim_s0,lim_dolp):
         # calculate Stokes parameters and add as new layers
@@ -443,9 +443,89 @@ class StokesEstimation(QWidget):
         self.draw_s0_histogram()
         self.draw_dolp_histogram()
 
-    def _on_click_dolpmap(self):
-        print("dolp dolp dolp")
+    def _on_click_dolpmap(self,lim_s0,lim_dolp):
+        # calculate Stokes parameters and add as new layers
+        self._on_click_stokes()
+        # grab the data from the layers of S0, S1 and S2
+        s0 = self.viewer.layers['S0'].data
+        s1 = self.viewer.layers['S1'].data
+        s2 = self.viewer.layers['S2'].data
+        
+        if lim_s0 == None: # if no input limits are given
+            # update the min/max limits of the s0 box
+            s0_min = np.min(s0)
+            s0_max = np.max(s0)
+            dolp_min = 0.0
+            dolp_max = 1.0
+        else:
+            s0_min = lim_s0[0]
+            s0_max = lim_s0[1]
+            dolp_min = lim_dolp[0]
+            dolp_max = lim_dolp[1]
+        
+        self.lineedit_s0_min.setText(str(round(s0_min)))
+        self.lineedit_s0_max.setText(str(round(s0_max)))
+        
+        # calculate DoLP from S0, S1 and S2
+        DoLP = np.sqrt((s1*s1 + s2*s2)/(s0*s0))
+        # add a new DoLP layer (or replace the data is one was already open)
+        if not self.check_if_dolp_is_loaded():
+            self.viewer.add_image(DoLP,contrast_limits=[0,1])
+        else:
+            self.viewer.layers['DoLP'].data = DoLP
+        
+        # scale parameters based on limits
+        DoLP = (DoLP - dolp_min)/(dolp_max - dolp_min); # rescale DoLP
+        DoLP[DoLP < 0] = 0
+        DoLP[DoLP > 1] = 1
+        s0 = (s0 - s0_min)/(s0_max - s0_min); # rescale DoLP
+        s0[s0 < 0] = 0
+        s0[s0 > 1] = 1        
+        
+        # create rgb stack
+        numDim = len(s0.shape) # number of dimensions of the dataset
+        r = DoLP
+        g = np.ones_like(r)*0.5
+        b = 1 - DoLP
+        DoLPmap = np.stack([r,g,b],numDim) # stack the h, s and v channels along a new dimension
+
+        # weight all channels by s0
+        DoLPmap[...,0] = DoLPmap[...,0]*s0
+        DoLPmap[...,1] = DoLPmap[...,1]*s0
+        DoLPmap[...,2] = DoLPmap[...,2]*s0
+        
+        DoLPmap = DoLPmap*255
+        DoLPmap = DoLPmap.astype(np.uint8) # convert to unsigned 8-bit integer values
+        DoLPmap_R = DoLPmap[...,0]
+        DoLPmap_G = DoLPmap[...,1]
+        DoLPmap_B = DoLPmap[...,2]
+        
+        # add new images for the 3 colour channels: HSVmap_R, HSVmap_G and HSVmap_B
+        if 'DoLPmap_R' in self.viewer.layers: # if layer already open, replace data
+            self.viewer.layers['DoLPmap_R'].data = DoLPmap_R
+        else:
+            self.viewer.add_image(DoLPmap_R,contrast_limits=[0,255],colormap="red",blending="additive",name="DoLPmap_R")
+
+        if 'DoLPmap_G' in self.viewer.layers: # if layer already open, replace data
+            self.viewer.layers['DoLPmap_G'].data = DoLPmap_G
+        else:
+            self.viewer.add_image(DoLPmap_G,contrast_limits=[0,255],colormap="green",blending="additive",name="DoLPmap_G")
+
+        if 'DoLPmap_B' in self.viewer.layers: # if layer already open, replace data
+            self.viewer.layers['DoLPmap_B'].data = DoLPmap_B
+        else:
+            self.viewer.add_image(DoLPmap_B,contrast_limits=[0,255],colormap="blue",blending="additive",name="DoLPmap_B")
+        
+        # redraw the histograms
+        self.draw_s0_histogram()
+        self.draw_dolp_histogram()
     
+    def _on_click_rerender_colmap(self):
+        if self.dropdown_colmap.currentText() == 'HSVmap':
+            self._on_click_rerender_hsvmap()
+        elif self.dropdown_colmap.currentText() == 'DoLPmap':
+            self._on_click_rerender_dolpmap()
+        
     def _on_click_rerender_hsvmap(self):
         s0_min = float(self.lineedit_s0_min.text())
         s0_max = float(self.lineedit_s0_max.text())
@@ -456,20 +536,15 @@ class StokesEstimation(QWidget):
         self._on_click_hsvmap(lim_s0,lim_dolp)
         
     def _on_click_rerender_dolpmap(self):
-        print("_on_click_rerender_dolpmap")
-        
-    
-    def _lineedit_dolp_min_changed(self):
-        print("_lineedit_dolp_min_changed")
-        
-    def _lineedit_dolp_max_changed(self):
-        print("_lineedit_dolp_max_changed")
-    
-    def _lineedit_s0_min_changed(self):
-        print("_lineedit_s0_min_changed")
-        
-    def _lineedit_s0_max_changed(self):
-        print("_lineedit_s0_max_changed")
+        s0_min = float(self.lineedit_s0_min.text())
+        s0_max = float(self.lineedit_s0_max.text())
+        dolp_min = float(self.lineedit_dolp_min.text())
+        dolp_max = float(self.lineedit_dolp_max.text())
+        lim_s0 = (s0_min, s0_max)
+        lim_dolp = (dolp_min, dolp_max)
+        self._on_click_dolpmap(lim_s0,lim_dolp)
+
+
          
     def check_if_s0_is_loaded(self):
         if 'S0' not in self.viewer.layers: return 0
