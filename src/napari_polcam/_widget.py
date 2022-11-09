@@ -159,8 +159,8 @@ class StokesEstimation(QWidget):
         
         # histogram plots =====================================================
         graph_container_hist = QWidget()
-        graph_container_hist.setMaximumHeight(150)
-        graph_container_hist.setLayout(QHBoxLayout())
+        graph_container_hist.setMaximumHeight(300)
+        graph_container_hist.setLayout(QVBoxLayout())
         
         self.s0_hist_widget = pg.GraphicsLayoutWidget()
         self.s0_hist_widget.setBackground(None)
