@@ -113,7 +113,7 @@ class StokesEstimation(QWidget):
         btn_channels.clicked.connect(self._on_click_channels)
         
         btn_stokes = QPushButton("Calculate Stokes parameters")
-        btn_stokes.clicked.connect(self._on_click_stokes)
+        btn_stokes.clicked.connect(self._on_click_stokes_add_to_viewer)
         
         btn_quadview = QPushButton("Calculate Quadview")
         btn_quadview.clicked.connect(self._on_click_quadview)
@@ -292,12 +292,13 @@ class StokesEstimation(QWidget):
             break
         
         return I0, I45, I90, I135
-    
-    def _on_click_stokes(self,add_to_viewer=True):
+
+    def _on_click_stokes_add_to_viewer(self):
         """" Estimate the Stokes parameter images from an unprocessed polarisation
         camera image. Add three new layers (S0, S1 and S2) to the napari viewer.
         Repeat for each layer that was selected. """
         for layer in self.viewer.layers.selection:
+            
             pci = PolarisationCameraImage(layer.data,
                                           self.dropdown_method.currentText(),
                                           self.dropdown_unit.currentText(),
@@ -309,30 +310,52 @@ class StokesEstimation(QWidget):
             I45 = I45.astype(np.double)
             I90 = I90.astype(np.double)
             I135 = I135.astype(np.double)
-            
+
             S0 = (I0 + I45 + I90 + I135)/2
             S1 = I0 - I90
             S2 = I45 - I135
             max_s0 = np.max(S0)
             
-            if add_to_viewer:
-                # add a new S0 layer (or replace the data is one was already open)
-                if not self.check_if_s0_is_loaded():
-                    self.viewer.add_image(S0, contrast_limits=[0, max_s0])    
-                else:
-                    self.viewer.layers['S0'].data = S0
-                # add a new S1 layer (or replace the data is one was already open)
-                if not self.check_if_s1_is_loaded():
-                    self.viewer.add_image(S1, contrast_limits=[-max_s0, max_s0])    
-                else:
-                    self.viewer.layers['S1'].data = S1
-                # add a new S2 layer (or replace the data is one was already open)
-                if not self.check_if_s2_is_loaded():
-                    self.viewer.add_image(S2, contrast_limits=[-max_s0, max_s0])    
-                else:
-                    self.viewer.layers['S2'].data = S2
-            break
-        
+            # add a new S0 layer (or replace the data is one was already open)
+            if not self.check_if_s0_is_loaded():
+                self.viewer.add_image(S0, contrast_limits=[0, max_s0])    
+            else:
+                self.viewer.layers['S0'].data = S0
+            # add a new S1 layer (or replace the data is one was already open)
+            if not self.check_if_s1_is_loaded():
+                self.viewer.add_image(S1, contrast_limits=[-max_s0, max_s0])    
+            else:
+                self.viewer.layers['S1'].data = S1
+            # add a new S2 layer (or replace the data is one was already open)
+            if not self.check_if_s2_is_loaded():
+                self.viewer.add_image(S2, contrast_limits=[-max_s0, max_s0])    
+            else:
+                self.viewer.layers['S2'].data = S2
+                break
+                
+        return S0, S1, S2
+    
+    def calculate_stokes(self):
+        """" Estimate the Stokes parameter images from an unprocessed polarisation
+        camera image. """
+        for layer in self.viewer.layers.selection:
+            
+            pci = PolarisationCameraImage(layer.data,
+                                          self.dropdown_method.currentText(),
+                                          self.dropdown_unit.currentText(),
+                                          self.offset)
+            pci.subtract_bkgnd()
+            I0, I45, I90, I135 = pci.convert_unprocessed()
+            
+            I0 = I0.astype(np.double)
+            I45 = I45.astype(np.double)
+            I90 = I90.astype(np.double)
+            I135 = I135.astype(np.double)
+
+            S0 = (I0 + I45 + I90 + I135)/2
+            S1 = I0 - I90
+            S2 = I45 - I135
+                
         return S0, S1, S2
                      
 
@@ -342,9 +365,9 @@ class StokesEstimation(QWidget):
         to the napari viewer as a new layer."""
         # calculate Stokes parameters
         if self.checkbox_show_intermediate_results.checkState(): # if checked
-            s0, s1, s2 = self._on_click_stokes() # will add as new layers to napari viewer
+            s0, s1, s2 = self._on_click_stokes_add_to_viewer()
         else: # if not checked
-            s0, s1, s2 = self._on_click_stokes(add_to_viewer=False)
+            s0, s1, s2 = self.calculate_stokes() # will add as new layers to napari viewer
             
         # calculate AoLP from S1 and S2
         AoLP = (1/2)*np.arctan2(s2,s1)
@@ -362,9 +385,9 @@ class StokesEstimation(QWidget):
         image to the napari viewer as a new layer."""
         # calculate Stokes parameters
         if self.checkbox_show_intermediate_results.checkState(): # if checked
-            s0, s1, s2 = self._on_click_stokes() # will add as new layers to napari viewer
+            s0, s1, s2 = self._on_click_stokes_add_to_viewer()
         else: # if not checked
-            s0, s1, s2 = self._on_click_stokes(add_to_viewer=False)
+            s0, s1, s2 = self.calculate_stokes() # will add as new layers to napari viewer
         
         # calculate DoLP from S0, S1 and S2
         DoLP = np.sqrt((s1*s1 + s2*s2)/(s0*s0))
@@ -385,9 +408,9 @@ class StokesEstimation(QWidget):
     def _on_click_hsvmap(self,lim_s0,lim_dolp):
         # calculate Stokes parameters
         if self.checkbox_show_intermediate_results.checkState(): # if checked
-            s0, s1, s2 = self._on_click_stokes() # will add as new layers to napari viewer
+            s0, s1, s2 = self._on_click_stokes_add_to_viewer()
         else: # if not checked
-            s0, s1, s2 = self._on_click_stokes(add_to_viewer=False)
+            s0, s1, s2 = self.calculate_stokes() # will add as new layers to napari viewer
         
         if lim_s0 == None: # if no input limits are given
             # update the min/max limits of the s0 box
@@ -474,9 +497,9 @@ class StokesEstimation(QWidget):
     def _on_click_dolpmap(self,lim_s0,lim_dolp):
         # calculate Stokes parameters
         if self.checkbox_show_intermediate_results.checkState(): # if checked
-            s0, s1, s2 = self._on_click_stokes() # will add as new layers to napari viewer
+            s0, s1, s2 = self._on_click_stokes_add_to_viewer()
         else: # if not checked
-            s0, s1, s2 = self._on_click_stokes(add_to_viewer=False)
+            s0, s1, s2 = self.calculate_stokes() # will add as new layers to napari viewer
         
         if lim_s0 == None: # if no input limits are given
             # update the min/max limits of the s0 box
