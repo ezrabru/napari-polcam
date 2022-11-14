@@ -114,7 +114,7 @@ class StokesEstimation(QWidget):
         btn_channels.clicked.connect(self._on_click_channels)
         
         btn_stokes = QPushButton("Calculate Stokes parameters")
-        btn_stokes.clicked.connect(self._on_click_stokes_add_to_viewer)
+        btn_stokes.clicked.connect(self._on_click_stokes)
         
         btn_quadview = QPushButton("Calculate Quadview")
         btn_quadview.clicked.connect(self._on_click_quadview)
@@ -301,7 +301,7 @@ class StokesEstimation(QWidget):
             return I0, I45, I90, I135
 
 
-    def _on_click_stokes_add_to_viewer(self):
+    def _on_click_stokes(self):
         """" Estimate the Stokes parameter images from an unprocessed polarisation
         camera image. Add three new layers (S0, S1 and S2) to the napari viewer.
         Repeat for each layer that was selected. """
@@ -380,7 +380,7 @@ class StokesEstimation(QWidget):
 
                 # calculate Stokes parameters
                 if self.checkbox_show_intermediate_results.checkState(): # if checked
-                    s0, s1, s2 = self._on_click_stokes_add_to_viewer()
+                    s0, s1, s2 = self._on_click_stokes()
                 else: # if not checked
                     s0, s1, s2 = self.calculate_stokes() # will add as new layers to napari viewer
                 
@@ -405,7 +405,7 @@ class StokesEstimation(QWidget):
             for layer in self.viewer.layers.selection:
 
                 if self.checkbox_show_intermediate_results.checkState(): # if checked
-                    s0, s1, s2 = self._on_click_stokes_add_to_viewer()
+                    s0, s1, s2 = self._on_click_stokes()
                 else: # if not checked
                     s0, s1, s2 = self.calculate_stokes() # will add as new layers to napari viewer
                 
@@ -433,7 +433,7 @@ class StokesEstimation(QWidget):
             
                 # calculate Stokes parameters
                 if self.checkbox_show_intermediate_results.checkState(): # if checked
-                    s0, s1, s2 = self._on_click_stokes_add_to_viewer()
+                    s0, s1, s2 = self._on_click_stokes()
                 else: # if not checked
                     s0, s1, s2 = self.calculate_stokes() # will add as new layers to napari viewer
                 
@@ -523,7 +523,7 @@ class StokesEstimation(QWidget):
                 
                 # calculate Stokes parameters
                 if self.checkbox_show_intermediate_results.checkState(): # if checked
-                    s0, s1, s2 = self._on_click_stokes_add_to_viewer()
+                    s0, s1, s2 = self._on_click_stokes()
                 else: # if not checked
                     s0, s1, s2 = self.calculate_stokes() # will add as new layers to napari viewer
                 
