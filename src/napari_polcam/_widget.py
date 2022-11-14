@@ -255,6 +255,16 @@ class StokesEstimation(QWidget):
         self.draw_s0_histogram([0,1]) # initialise histogram plot
         self.draw_dolp_histogram([0,1]) # initialise histogram plot
 
+    def check_only_one_layer_is_selected(self):
+        numLayersSelected = len(self.viewer.layers.selection)
+        if numLayersSelected == 0:
+            show_info("Please first select the layer you want to process.")
+            return False
+        elif numLayersSelected == 1:
+            return True
+        else:
+            show_info(f"Please select only 1 layer. You selected {numLayersSelected} layers.")
+            return False
     
     def _on_value_change_bkgnd(self):
         self.offset = float(self.lineedit_bkgnd.text())
@@ -263,78 +273,81 @@ class StokesEstimation(QWidget):
         """" Reorganise the pixels in an unprocessed polarisation camera image
         into a quadview representation. Add as a new layer to the napari viewer.
         Repeat for each layer that was selected. """
-        for layer in self.viewer.layers.selection: # for each selected layer
-            pci = PolarisationCameraImage(layer.data,
-                                          self.dropdown_method.currentText(),
-                                          self.dropdown_unit.currentText(),
-                                          self.offset)
-            quadview = pci.unprocessed_to_quadview() # calculate quadview
-            # add quadview image as new layer to napari viewer
-            self.viewer.add_image(quadview, name="quadview_"+layer.name)
-            break
-        return quadview
+        if self.check_only_one_layer_is_selected():
+            for layer in self.viewer.layers.selection: # for each selected layer
+                pci = PolarisationCameraImage(layer.data,
+                                              self.dropdown_method.currentText(),
+                                              self.dropdown_unit.currentText(),
+                                              self.offset)
+                quadview = pci.unprocessed_to_quadview() # calculate quadview
+                # add quadview image as new layer to napari viewer
+                self.viewer.add_image(quadview, name="quadview_"+layer.name)
+                break
+            return quadview
     
     def _on_click_channels(self):
         """" Estimate the 4 intensity channels from an unprocessed polarisation
         camera image. Add four new layers (I0, I45, I90 and I135) to the napari
         viewer. Repeat for each layer that was selected. """
-        for layer in self.viewer.layers.selection:
-            pci = PolarisationCameraImage(layer.data,
-                                          self.dropdown_method.currentText(),
-                                          self.dropdown_unit.currentText(),
-                                          self.offset)
-            I0, I45, I90, I135 = pci.convert_unprocessed()
-            I_min = np.min(I0 + I90)/2
-            I_max = np.max(I0 + I90)/2
-            # add images as new layers to napari viewer
-            self.viewer.add_image(I0, contrast_limits=[I_min, I_max], name="I0_"+layer.name)
-            self.viewer.add_image(I45, contrast_limits=[I_min, I_max], name="I45_"+layer.name)        
-            self.viewer.add_image(I90, contrast_limits=[I_min, I_max], name="I90_"+layer.name)        
-            self.viewer.add_image(I135, contrast_limits=[I_min, I_max], name="I135_"+layer.name)
-            break
-        return I0, I45, I90, I135
+        if self.check_only_one_layer_is_selected():
+            for layer in self.viewer.layers.selection:
+                pci = PolarisationCameraImage(layer.data,
+                                              self.dropdown_method.currentText(),
+                                              self.dropdown_unit.currentText(),
+                                              self.offset)
+                I0, I45, I90, I135 = pci.convert_unprocessed()
+                I_min = np.min(I0 + I90)/2
+                I_max = np.max(I0 + I90)/2
+                # add images as new layers to napari viewer
+                self.viewer.add_image(I0, contrast_limits=[I_min, I_max], name="I0_"+layer.name)
+                self.viewer.add_image(I45, contrast_limits=[I_min, I_max], name="I45_"+layer.name)        
+                self.viewer.add_image(I90, contrast_limits=[I_min, I_max], name="I90_"+layer.name)        
+                self.viewer.add_image(I135, contrast_limits=[I_min, I_max], name="I135_"+layer.name)
+                break
+            return I0, I45, I90, I135
 
     def _on_click_stokes_add_to_viewer(self):
         """" Estimate the Stokes parameter images from an unprocessed polarisation
         camera image. Add three new layers (S0, S1 and S2) to the napari viewer.
         Repeat for each layer that was selected. """
-        for layer in self.viewer.layers.selection:
-            
-            pci = PolarisationCameraImage(layer.data,
-                                          self.dropdown_method.currentText(),
-                                          self.dropdown_unit.currentText(),
-                                          self.offset)
-            pci.subtract_bkgnd()
-            I0, I45, I90, I135 = pci.convert_unprocessed()
-            
-            I0 = I0.astype(np.double)
-            I45 = I45.astype(np.double)
-            I90 = I90.astype(np.double)
-            I135 = I135.astype(np.double)
-
-            S0 = (I0 + I45 + I90 + I135)/2
-            S1 = I0 - I90
-            S2 = I45 - I135
-            max_s0 = np.max(S0)
-            
-            # add a new S0 layer (or replace the data is one was already open)
-            if not self.check_if_s0_is_loaded():
-                self.viewer.add_image(S0, contrast_limits=[0, max_s0], name="S0_"+layer.name)    
-            else:
-                self.viewer.layers['S0'].data = S0
-            # add a new S1 layer (or replace the data is one was already open)
-            if not self.check_if_s1_is_loaded():
-                self.viewer.add_image(S1, contrast_limits=[-max_s0, max_s0], name="S1_"+layer.name)    
-            else:
-                self.viewer.layers['S1'].data = S1
-            # add a new S2 layer (or replace the data is one was already open)
-            if not self.check_if_s2_is_loaded():
-                self.viewer.add_image(S2, contrast_limits=[-max_s0, max_s0], name="S2_"+layer.name)    
-            else:
-                self.viewer.layers['S2'].data = S2
-                break
+        if self.check_only_one_layer_is_selected():
+            for layer in self.viewer.layers.selection:
                 
-        return S0, S1, S2
+                pci = PolarisationCameraImage(layer.data,
+                                              self.dropdown_method.currentText(),
+                                              self.dropdown_unit.currentText(),
+                                              self.offset)
+                pci.subtract_bkgnd()
+                I0, I45, I90, I135 = pci.convert_unprocessed()
+                
+                I0 = I0.astype(np.double)
+                I45 = I45.astype(np.double)
+                I90 = I90.astype(np.double)
+                I135 = I135.astype(np.double)
+    
+                S0 = (I0 + I45 + I90 + I135)/2
+                S1 = I0 - I90
+                S2 = I45 - I135
+                max_s0 = np.max(S0)
+                
+                # add a new S0 layer (or replace the data is one was already open)
+                if not self.check_if_s0_is_loaded():
+                    self.viewer.add_image(S0, contrast_limits=[0, max_s0], name="S0_"+layer.name)    
+                else:
+                    self.viewer.layers['S0'].data = S0
+                # add a new S1 layer (or replace the data is one was already open)
+                if not self.check_if_s1_is_loaded():
+                    self.viewer.add_image(S1, contrast_limits=[-max_s0, max_s0], name="S1_"+layer.name)    
+                else:
+                    self.viewer.layers['S1'].data = S1
+                # add a new S2 layer (or replace the data is one was already open)
+                if not self.check_if_s2_is_loaded():
+                    self.viewer.add_image(S2, contrast_limits=[-max_s0, max_s0], name="S2_"+layer.name)    
+                else:
+                    self.viewer.layers['S2'].data = S2
+                    break
+                    
+            return S0, S1, S2
     
     def calculate_stokes(self):
         """" Estimate the Stokes parameter images from an unprocessed polarisation
@@ -364,47 +377,50 @@ class StokesEstimation(QWidget):
         """" Calculate the Angle of Linear Polarisation (AoLP) image from the
         S1 and S2 layers that are open in the napari viewer. Add the AoLP image
         to the napari viewer as a new layer."""
-        # calculate Stokes parameters
-        if self.checkbox_show_intermediate_results.checkState(): # if checked
-            s0, s1, s2 = self._on_click_stokes_add_to_viewer()
-        else: # if not checked
-            s0, s1, s2 = self.calculate_stokes() # will add as new layers to napari viewer
-        
-        # calculate AoLP from S1 and S2
-        AoLP = (1/2)*np.arctan2(s2,s1)
-        # add a new AoLP layer (or replace the data is one was already open)
-        if not self.check_if_aolp_is_loaded():
-            self.viewer.add_image(AoLP,contrast_limits=[-np.pi/2,np.pi/2])
-        else:
-            self.viewer.layers['AoLP'].data = AoLP
+        if self.check_only_one_layer_is_selected():
+            # calculate Stokes parameters
+            if self.checkbox_show_intermediate_results.checkState(): # if checked
+                s0, s1, s2 = self._on_click_stokes_add_to_viewer()
+            else: # if not checked
+                s0, s1, s2 = self.calculate_stokes() # will add as new layers to napari viewer
             
-        return AoLP
-        
+            # calculate AoLP from S1 and S2
+            AoLP = (1/2)*np.arctan2(s2,s1)
+            # add a new AoLP layer (or replace the data is one was already open)
+            if not self.check_if_aolp_is_loaded():
+                self.viewer.add_image(AoLP,contrast_limits=[-np.pi/2,np.pi/2])
+            else:
+                self.viewer.layers['AoLP'].data = AoLP
+                
+            return AoLP
+            
     def _on_click_dolp(self,add_to_viewer=True):
         """" Calculate the Degree of Linear Polarisation (DoLP) image from the
         S0, S1 and S2 layers that are open in the napari viewer. Add the DoLP
         image to the napari viewer as a new layer."""
         # calculate Stokes parameters
-        if self.checkbox_show_intermediate_results.checkState(): # if checked
-            s0, s1, s2 = self._on_click_stokes_add_to_viewer()
-        else: # if not checked
-            s0, s1, s2 = self.calculate_stokes() # will add as new layers to napari viewer
-        
-        # calculate DoLP from S0, S1 and S2
-        DoLP = np.sqrt((s1*s1 + s2*s2)/(s0*s0))
-        # add a new DoLP layer (or replace the data is one was already open)
-        if not self.check_if_dolp_is_loaded():
-            self.viewer.add_image(DoLP,contrast_limits=[0,1])
-        else:
-            self.viewer.layers['DoLP'].data = DoLP
-        
-        return DoLP
+        if self.check_only_one_layer_is_selected():
+            if self.checkbox_show_intermediate_results.checkState(): # if checked
+                s0, s1, s2 = self._on_click_stokes_add_to_viewer()
+            else: # if not checked
+                s0, s1, s2 = self.calculate_stokes() # will add as new layers to napari viewer
+            
+            # calculate DoLP from S0, S1 and S2
+            DoLP = np.sqrt((s1*s1 + s2*s2)/(s0*s0))
+            # add a new DoLP layer (or replace the data is one was already open)
+            if not self.check_if_dolp_is_loaded():
+                self.viewer.add_image(DoLP,contrast_limits=[0,1])
+            else:
+                self.viewer.layers['DoLP'].data = DoLP
+            
+            return DoLP
     
     def _on_click_btn_calculate_colmap(self):
-        if self.dropdown_colmap.currentText() == 'HSVmap':
-            self._on_click_hsvmap(None,None)
-        elif self.dropdown_colmap.currentText() == 'DoLPmap':
-            self._on_click_dolpmap(None,None)
+        if self.check_only_one_layer_is_selected():
+            if self.dropdown_colmap.currentText() == 'HSVmap':
+                self._on_click_hsvmap(None,None)
+            elif self.dropdown_colmap.currentText() == 'DoLPmap':
+                self._on_click_dolpmap(None,None)
         
     def _on_click_hsvmap(self,lim_s0,lim_dolp):
         # calculate Stokes parameters
@@ -577,10 +593,11 @@ class StokesEstimation(QWidget):
         self.draw_dolp_histogram(DoLP)
     
     def _on_click_rerender_colmap(self):
-        if self.dropdown_colmap.currentText() == 'HSVmap':
-            self._on_click_rerender_hsvmap()
-        elif self.dropdown_colmap.currentText() == 'DoLPmap':
-            self._on_click_rerender_dolpmap()
+        if self.check_only_one_layer_is_selected():
+            if self.dropdown_colmap.currentText() == 'HSVmap':
+                self._on_click_rerender_hsvmap()
+            elif self.dropdown_colmap.currentText() == 'DoLPmap':
+                self._on_click_rerender_dolpmap()
         
     def _on_click_rerender_hsvmap(self):
         s0_min = float(self.lineedit_s0_min.text())
