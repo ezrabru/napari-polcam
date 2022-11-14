@@ -269,7 +269,8 @@ class StokesEstimation(QWidget):
                                           self.dropdown_unit.currentText(),
                                           self.offset)
             quadview = pci.unprocessed_to_quadview() # calculate quadview
-            self.viewer.add_image(quadview) # display quadview as new layer
+            # add quadview image as new layer to napari viewer
+            self.viewer.add_image(quadview, name="quadview_"+layer.name)
             break
         return quadview
     
@@ -285,12 +286,12 @@ class StokesEstimation(QWidget):
             I0, I45, I90, I135 = pci.convert_unprocessed()
             I_min = np.min(I0 + I90)/2
             I_max = np.max(I0 + I90)/2
-            self.viewer.add_image(I0, contrast_limits=[I_min, I_max])        
-            self.viewer.add_image(I45, contrast_limits=[I_min, I_max])        
-            self.viewer.add_image(I90, contrast_limits=[I_min, I_max])        
-            self.viewer.add_image(I135, contrast_limits=[I_min, I_max])
+            # add images as new layers to napari viewer
+            self.viewer.add_image(I0, contrast_limits=[I_min, I_max], name="I0_"+layer.name)
+            self.viewer.add_image(I45, contrast_limits=[I_min, I_max], name="I45_"+layer.name)        
+            self.viewer.add_image(I90, contrast_limits=[I_min, I_max], name="I90_"+layer.name)        
+            self.viewer.add_image(I135, contrast_limits=[I_min, I_max], name="I135_"+layer.name)
             break
-        
         return I0, I45, I90, I135
 
     def _on_click_stokes_add_to_viewer(self):
@@ -318,17 +319,17 @@ class StokesEstimation(QWidget):
             
             # add a new S0 layer (or replace the data is one was already open)
             if not self.check_if_s0_is_loaded():
-                self.viewer.add_image(S0, contrast_limits=[0, max_s0])    
+                self.viewer.add_image(S0, contrast_limits=[0, max_s0], name="S0_"+layer.name)    
             else:
                 self.viewer.layers['S0'].data = S0
             # add a new S1 layer (or replace the data is one was already open)
             if not self.check_if_s1_is_loaded():
-                self.viewer.add_image(S1, contrast_limits=[-max_s0, max_s0])    
+                self.viewer.add_image(S1, contrast_limits=[-max_s0, max_s0], name="S1_"+layer.name)    
             else:
                 self.viewer.layers['S1'].data = S1
             # add a new S2 layer (or replace the data is one was already open)
             if not self.check_if_s2_is_loaded():
-                self.viewer.add_image(S2, contrast_limits=[-max_s0, max_s0])    
+                self.viewer.add_image(S2, contrast_limits=[-max_s0, max_s0], name="S2_"+layer.name)    
             else:
                 self.viewer.layers['S2'].data = S2
                 break
@@ -368,7 +369,7 @@ class StokesEstimation(QWidget):
             s0, s1, s2 = self._on_click_stokes_add_to_viewer()
         else: # if not checked
             s0, s1, s2 = self.calculate_stokes() # will add as new layers to napari viewer
-            
+        
         # calculate AoLP from S1 and S2
         AoLP = (1/2)*np.arctan2(s2,s1)
         # add a new AoLP layer (or replace the data is one was already open)
