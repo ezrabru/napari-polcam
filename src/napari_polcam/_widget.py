@@ -331,20 +331,22 @@ class StokesEstimation(QWidget):
                 max_s0 = np.max(S0)
                 
                 # add a new S0 layer (or replace the data is one was already open)
-                if not self.check_if_s0_is_loaded():
+                if not self.check_if_layer_is_loaded("S0_"+layer.name):
                     self.viewer.add_image(S0, contrast_limits=[0, max_s0], name="S0_"+layer.name)    
                 else:
-                    self.viewer.layers['S0'].data = S0
+                    self.viewer.layers["S0_"+layer.name].data = S0
+                    
                 # add a new S1 layer (or replace the data is one was already open)
-                if not self.check_if_s1_is_loaded():
+                if not self.check_if_layer_is_loaded("S1_"+layer.name):
                     self.viewer.add_image(S1, contrast_limits=[-max_s0, max_s0], name="S1_"+layer.name)    
                 else:
-                    self.viewer.layers['S1'].data = S1
+                    self.viewer.layers["S1_"+layer.name].data = S1
+                    
                 # add a new S2 layer (or replace the data is one was already open)
-                if not self.check_if_s2_is_loaded():
+                if not self.check_if_layer_is_loaded("S2_"+layer.name):
                     self.viewer.add_image(S2, contrast_limits=[-max_s0, max_s0], name="S2_"+layer.name)    
                 else:
-                    self.viewer.layers['S2'].data = S2
+                    self.viewer.layers["S2_"+layer.name].data = S2
                     break
                     
             return S0, S1, S2
@@ -378,20 +380,23 @@ class StokesEstimation(QWidget):
         S1 and S2 layers that are open in the napari viewer. Add the AoLP image
         to the napari viewer as a new layer."""
         if self.check_only_one_layer_is_selected():
-            # calculate Stokes parameters
-            if self.checkbox_show_intermediate_results.checkState(): # if checked
-                s0, s1, s2 = self._on_click_stokes_add_to_viewer()
-            else: # if not checked
-                s0, s1, s2 = self.calculate_stokes() # will add as new layers to napari viewer
-            
-            # calculate AoLP from S1 and S2
-            AoLP = (1/2)*np.arctan2(s2,s1)
-            # add a new AoLP layer (or replace the data is one was already open)
-            if not self.check_if_aolp_is_loaded():
-                self.viewer.add_image(AoLP,contrast_limits=[-np.pi/2,np.pi/2])
-            else:
-                self.viewer.layers['AoLP'].data = AoLP
+            for layer in self.viewer.layers.selection:
+
+                # calculate Stokes parameters
+                if self.checkbox_show_intermediate_results.checkState(): # if checked
+                    s0, s1, s2 = self._on_click_stokes_add_to_viewer()
+                else: # if not checked
+                    s0, s1, s2 = self.calculate_stokes() # will add as new layers to napari viewer
                 
+                # calculate AoLP from S1 and S2
+                AoLP = (1/2)*np.arctan2(s2,s1)
+                # add a new AoLP layer (or replace the data is one was already open)
+                if not self.check_if_layer_is_loaded("AoLP_"+layer.name):
+                    self.viewer.add_image(AoLP,contrast_limits=[-np.pi/2,np.pi/2], name="AoLP_"+layer.name)
+                else:
+                    self.viewer.layers["AoLP_"+layer.name].data = AoLP
+                break
+                    
             return AoLP
             
     def _on_click_dolp(self,add_to_viewer=True):
@@ -400,197 +405,201 @@ class StokesEstimation(QWidget):
         image to the napari viewer as a new layer."""
         # calculate Stokes parameters
         if self.check_only_one_layer_is_selected():
-            if self.checkbox_show_intermediate_results.checkState(): # if checked
-                s0, s1, s2 = self._on_click_stokes_add_to_viewer()
-            else: # if not checked
-                s0, s1, s2 = self.calculate_stokes() # will add as new layers to napari viewer
-            
-            # calculate DoLP from S0, S1 and S2
-            DoLP = np.sqrt((s1*s1 + s2*s2)/(s0*s0))
-            # add a new DoLP layer (or replace the data is one was already open)
-            if not self.check_if_dolp_is_loaded():
-                self.viewer.add_image(DoLP,contrast_limits=[0,1])
-            else:
-                self.viewer.layers['DoLP'].data = DoLP
-            
+            for layer in self.viewer.layers.selection:
+
+                if self.checkbox_show_intermediate_results.checkState(): # if checked
+                    s0, s1, s2 = self._on_click_stokes_add_to_viewer()
+                else: # if not checked
+                    s0, s1, s2 = self.calculate_stokes() # will add as new layers to napari viewer
+                
+                # calculate DoLP from S0, S1 and S2
+                DoLP = np.sqrt((s1*s1 + s2*s2)/(s0*s0))
+                # add a new DoLP layer (or replace the data is one was already open)
+                if not self.check_if_layer_is_loaded("DoLP_"+layer.name):
+                    self.viewer.add_image(DoLP,contrast_limits=[0,1], name="DoLP_"+layer.name)
+                else:
+                    self.viewer.layers["DoLP_"+layer.name].data = DoLP
+                break
             return DoLP
     
     def _on_click_btn_calculate_colmap(self):
-        if self.check_only_one_layer_is_selected():
-            if self.dropdown_colmap.currentText() == 'HSVmap':
-                self._on_click_hsvmap(None,None)
-            elif self.dropdown_colmap.currentText() == 'DoLPmap':
-                self._on_click_dolpmap(None,None)
+        if self.dropdown_colmap.currentText() == 'HSVmap':
+            self._on_click_hsvmap(None,None)
+        elif self.dropdown_colmap.currentText() == 'DoLPmap':
+            self._on_click_dolpmap(None,None)
         
     def _on_click_hsvmap(self,lim_s0,lim_dolp):
-        # calculate Stokes parameters
-        if self.checkbox_show_intermediate_results.checkState(): # if checked
-            s0, s1, s2 = self._on_click_stokes_add_to_viewer()
-        else: # if not checked
-            s0, s1, s2 = self.calculate_stokes() # will add as new layers to napari viewer
+        if self.check_only_one_layer_is_selected():
+            for layer in self.viewer.layers.selection:
+            
+                # calculate Stokes parameters
+                if self.checkbox_show_intermediate_results.checkState(): # if checked
+                    s0, s1, s2 = self._on_click_stokes_add_to_viewer()
+                else: # if not checked
+                    s0, s1, s2 = self.calculate_stokes() # will add as new layers to napari viewer
+                
+                if lim_s0 == None: # if no input limits are given
+                    # update the min/max limits of the s0 box
+                    s0_min = np.min(s0)
+                    s0_max = np.max(s0)
+                    dolp_min = 0.0
+                    dolp_max = 1.0
+                else:
+                    s0_min = lim_s0[0]
+                    s0_max = lim_s0[1]
+                    dolp_min = lim_dolp[0]
+                    dolp_max = lim_dolp[1]
+                
+                self.lineedit_s0_min.setText(str(round(s0_min)))
+                self.lineedit_s0_max.setText(str(round(s0_max)))
+                
+                # calculate AoLP and DoLP from Stokes parameters
+                AoLP = (1/2)*np.arctan2(s2,s1)
+                DoLP = np.sqrt((s1*s1 + s2*s2)/(s0*s0))
         
-        if lim_s0 == None: # if no input limits are given
-            # update the min/max limits of the s0 box
-            s0_min = np.min(s0)
-            s0_max = np.max(s0)
-            dolp_min = 0.0
-            dolp_max = 1.0
-        else:
-            s0_min = lim_s0[0]
-            s0_max = lim_s0[1]
-            dolp_min = lim_dolp[0]
-            dolp_max = lim_dolp[1]
-        
-        self.lineedit_s0_min.setText(str(round(s0_min)))
-        self.lineedit_s0_max.setText(str(round(s0_max)))
-        
-        # calculate AoLP and DoLP from Stokes parameters
-        AoLP = (1/2)*np.arctan2(s2,s1)
-        DoLP = np.sqrt((s1*s1 + s2*s2)/(s0*s0))
+                if self.checkbox_show_intermediate_results.checkState(): # if checked
+                    # add a new AoLP layer (or replace the data is one was already open)
+                    if not self.check_if_layer_is_loaded("AoLP_"+layer.name):
+                        self.viewer.add_image(AoLP,contrast_limits=[-np.pi/2,np.pi/2], name="AoLP_"+layer.name)
+                    else:
+                        self.viewer.layers["AoLP_"+layer.name].data = AoLP
+                
+                    # add a new DoLP layer (or replace the data is one was already open)
+                    if not self.check_if_layer_is_loaded("DoLP_"+layer.name):
+                        self.viewer.add_image(DoLP,contrast_limits=[0,1], name="DoLP_"+layer.name)
+                    else:
+                        self.viewer.layers["DoLP_"+layer.name].data = DoLP
+                
+                # arrange the hue, saturation and value channels
+                h = AoLP # hue
+                s = DoLP # saturation
+                v = s0 # value
+                
+                # scale parameters based on limits
+                h = (h + np.pi/2)/np.pi; # rescale [-pi/2, pi/2] to [0, 1]
+                s = (s - dolp_min)/(dolp_max - dolp_min); # rescale DoLP
+                v = (v - s0_min)/(s0_max - s0_min); # rescale DoLP
 
-        if self.checkbox_show_intermediate_results.checkState(): # if checked
-            # add a new AoLP layer (or replace the data is one was already open)
-            if not self.check_if_aolp_is_loaded():
-                self.viewer.add_image(AoLP,contrast_limits=[-np.pi/2,np.pi/2])
-            else:
-                self.viewer.layers['AoLP'].data = AoLP
+                # convert hsv to rgb
+                numDim = len(h.shape) # number of dimensions of the dataset
+                hsv = np.stack([h,s,v],numDim) # stack the h, s and v channels along a new dimension
+                rgb = hsv_to_rgb(hsv) # convert hsv colourspace to rgb colourspace
+                rgb = rgb*255 # scale [0 1] to 8-bit [0 255]
+                HSVmap = rgb.astype(np.uint8) # convert to unsigned 8-bit integer values
+                HSVmap_R = HSVmap[...,0]
+                HSVmap_G = HSVmap[...,1]
+                HSVmap_B = HSVmap[...,2]
+                
+                # add new images for the 3 colour channels: HSVmap_R, HSVmap_G and HSVmap_B
+                if self.check_if_layer_is_loaded("HSVmap_R_"+layer.name): # if layer already open, replace data
+                    self.viewer.layers["HSVmap_R_"+layer.name].data = HSVmap_R
+                else:
+                    self.viewer.add_image(HSVmap_R,contrast_limits=[0,255],colormap="red",blending="additive",name="HSVmap_R_"+layer.name)
         
-            # add a new DoLP layer (or replace the data is one was already open)
-            if not self.check_if_dolp_is_loaded():
-                self.viewer.add_image(DoLP,contrast_limits=[0,1])
-            else:
-                self.viewer.layers['DoLP'].data = DoLP
+                if self.check_if_layer_is_loaded("HSVmap_G_"+layer.name): # if layer already open, replace data
+                    self.viewer.layers["HSVmap_G_"+layer.name].data = HSVmap_G
+                else:
+                    self.viewer.add_image(HSVmap_G,contrast_limits=[0,255],colormap="green",blending="additive",name="HSVmap_G_"+layer.name)
         
-        # arrange the hue, saturation and value channels
-        h = AoLP # hue
-        s = DoLP # saturation
-        v = s0 # value
-        
-        # scale parameters based on limits
-        h = (h + np.pi/2)/np.pi; # rescale [-pi/2, pi/2] to [0, 1]
-        s = (s - dolp_min)/(dolp_max - dolp_min); # rescale DoLP
-        v = (v - s0_min)/(s0_max - s0_min); # rescale DoLP
-        # make sure all values fall between 0 and 1
-        h[h < 0] = 0
-        h[h > 1] = 1
-        s[s < 0] = 0
-        s[s > 1] = 1
-        v[v < 0] = 0
-        v[v > 1] = 1
-        # convert hsv to rgb
-        numDim = len(h.shape) # number of dimensions of the dataset
-        hsv = np.stack([h,s,v],numDim) # stack the h, s and v channels along a new dimension
-        rgb = hsv_to_rgb(hsv) # convert hsv colourspace to rgb colourspace
-        rgb = rgb*255 # scale [0 1] to 8-bit [0 255]
-        HSVmap = rgb.astype(np.uint8) # convert to unsigned 8-bit integer values
-        HSVmap_R = HSVmap[...,0]
-        HSVmap_G = HSVmap[...,1]
-        HSVmap_B = HSVmap[...,2]
-        
-        # add new images for the 3 colour channels: HSVmap_R, HSVmap_G and HSVmap_B
-        if 'HSVmap_R' in self.viewer.layers: # if layer already open, replace data
-            self.viewer.layers['HSVmap_R'].data = HSVmap_R
-        else:
-            self.viewer.add_image(HSVmap_R,contrast_limits=[0,255],colormap="red",blending="additive",name="HSVmap_R")
-
-        if 'HSVmap_G' in self.viewer.layers: # if layer already open, replace data
-            self.viewer.layers['HSVmap_G'].data = HSVmap_G
-        else:
-            self.viewer.add_image(HSVmap_G,contrast_limits=[0,255],colormap="green",blending="additive",name="HSVmap_G")
-
-        if 'HSVmap_B' in self.viewer.layers: # if layer already open, replace data
-            self.viewer.layers['HSVmap_B'].data = HSVmap_B
-        else:
-            self.viewer.add_image(HSVmap_B,contrast_limits=[0,255],colormap="blue",blending="additive",name="HSVmap_B")
-        
-        # link the internal napari contrast limits settings between the layes
-        layers_to_link = [self.viewer.layers['HSVmap_R'],self.viewer.layers['HSVmap_G'],self.viewer.layers['HSVmap_B']]
-        link_layers(layers_to_link, ('contrast_limits', 'gamma', 'opacity'))
-        
-        # redraw the histograms
-        self.draw_s0_histogram(s0)
-        self.draw_dolp_histogram(DoLP)
+                if self.check_if_layer_is_loaded("HSVmap_B_"+layer.name): # if layer already open, replace data
+                    self.viewer.layers["HSVmap_B_"+layer.name].data = HSVmap_B
+                else:
+                    self.viewer.add_image(HSVmap_B,contrast_limits=[0,255],colormap="blue",blending="additive",name="HSVmap_B_"+layer.name)
+                
+                # link the internal napari contrast limits settings between the layes
+                layers_to_link = [self.viewer.layers["HSVmap_R_"+layer.name],
+                                  self.viewer.layers["HSVmap_G_"+layer.name],
+                                  self.viewer.layers["HSVmap_B_"+layer.name]]
+                link_layers(layers_to_link, ('contrast_limits', 'gamma', 'opacity'))
+                
+                # redraw the histograms
+                self.draw_s0_histogram(s0)
+                self.draw_dolp_histogram(DoLP)
+                break
 
     def _on_click_dolpmap(self,lim_s0,lim_dolp):
-        # calculate Stokes parameters
-        if self.checkbox_show_intermediate_results.checkState(): # if checked
-            s0, s1, s2 = self._on_click_stokes_add_to_viewer()
-        else: # if not checked
-            s0, s1, s2 = self.calculate_stokes() # will add as new layers to napari viewer
+        if self.check_only_one_layer_is_selected():
+            for layer in self.viewer.layers.selection:
+                
+                # calculate Stokes parameters
+                if self.checkbox_show_intermediate_results.checkState(): # if checked
+                    s0, s1, s2 = self._on_click_stokes_add_to_viewer()
+                else: # if not checked
+                    s0, s1, s2 = self.calculate_stokes() # will add as new layers to napari viewer
+                
+                if lim_s0 == None: # if no input limits are given
+                    # update the min/max limits of the s0 box
+                    s0_min = np.min(s0)
+                    s0_max = np.max(s0)
+                    dolp_min = 0.0
+                    dolp_max = 1.0
+                else:
+                    s0_min = lim_s0[0]
+                    s0_max = lim_s0[1]
+                    dolp_min = lim_dolp[0]
+                    dolp_max = lim_dolp[1]
+                
+                self.lineedit_s0_min.setText(str(round(s0_min)))
+                self.lineedit_s0_max.setText(str(round(s0_max)))
+                
+                # calculate DoLP from S0, S1 and S2
+                DoLP = np.sqrt((s1*s1 + s2*s2)/(s0*s0))
+                if self.checkbox_show_intermediate_results.checkState(): # if checked
+                    # add a new DoLP layer (or replace the data is one was already open)
+                    if not self.check_if_layer_is_loaded("DoLP_"+layer.name):
+                        self.viewer.add_image(DoLP,contrast_limits=[0,1], name="DoLP_"+layer.name)
+                    else:
+                        self.viewer.layers["DoLP_"+layer.name].data = DoLP
+                
+                # scale parameters based on limits
+                DoLP = (DoLP - dolp_min)/(dolp_max - dolp_min); # rescale DoLP
+                s0 = (s0 - s0_min)/(s0_max - s0_min); # rescale DoLP      
+                
+                # create rgb stack
+                numDim = len(s0.shape) # number of dimensions of the dataset
+                r = DoLP
+                g = np.ones_like(r)*0.5
+                b = 1 - DoLP
+                DoLPmap = np.stack([r,g,b],numDim) # stack the h, s and v channels along a new dimension
         
-        if lim_s0 == None: # if no input limits are given
-            # update the min/max limits of the s0 box
-            s0_min = np.min(s0)
-            s0_max = np.max(s0)
-            dolp_min = 0.0
-            dolp_max = 1.0
-        else:
-            s0_min = lim_s0[0]
-            s0_max = lim_s0[1]
-            dolp_min = lim_dolp[0]
-            dolp_max = lim_dolp[1]
+                # weight all channels by s0
+                DoLPmap[...,0] = DoLPmap[...,0]*s0
+                DoLPmap[...,1] = DoLPmap[...,1]*s0
+                DoLPmap[...,2] = DoLPmap[...,2]*s0
+                
+                DoLPmap = DoLPmap*255
+                DoLPmap = DoLPmap.astype(np.uint8) # convert to unsigned 8-bit integer values
+                DoLPmap_R = DoLPmap[...,0]
+                DoLPmap_G = DoLPmap[...,1]
+                DoLPmap_B = DoLPmap[...,2]
+                
+                
+                # add new images for the 3 colour channels: DoLPmap_R, DoLPmap_G and DoLPmap_B
+                if self.check_if_layer_is_loaded("DoLPmap_R_"+layer.name): # if layer already open, replace data
+                    self.viewer.layers["DoLPmap_R_"+layer.name].data = DoLPmap_R
+                else:
+                    self.viewer.add_image(DoLPmap_R,contrast_limits=[0,255],colormap="red",blending="additive",name="DoLPmap_R_"+layer.name)
         
-        self.lineedit_s0_min.setText(str(round(s0_min)))
-        self.lineedit_s0_max.setText(str(round(s0_max)))
+                if self.check_if_layer_is_loaded("DoLPmap_G_"+layer.name): # if layer already open, replace data
+                    self.viewer.layers["DoLPmap_G_"+layer.name].data = DoLPmap_G
+                else:
+                    self.viewer.add_image(DoLPmap_G,contrast_limits=[0,255],colormap="green",blending="additive",name="DoLPmap_G_"+layer.name)
         
-        # calculate DoLP from S0, S1 and S2
-        DoLP = np.sqrt((s1*s1 + s2*s2)/(s0*s0))
-        if self.checkbox_show_intermediate_results.checkState(): # if checked
-            # add a new DoLP layer (or replace the data is one was already open)
-            if not self.check_if_dolp_is_loaded():
-                self.viewer.add_image(DoLP,contrast_limits=[0,1])
-            else:
-                self.viewer.layers['DoLP'].data = DoLP
-        
-        # scale parameters based on limits
-        DoLP = (DoLP - dolp_min)/(dolp_max - dolp_min); # rescale DoLP
-        DoLP[DoLP < 0] = 0
-        DoLP[DoLP > 1] = 1
-        s0 = (s0 - s0_min)/(s0_max - s0_min); # rescale DoLP
-        s0[s0 < 0] = 0
-        s0[s0 > 1] = 1        
-        
-        # create rgb stack
-        numDim = len(s0.shape) # number of dimensions of the dataset
-        r = DoLP
-        g = np.ones_like(r)*0.5
-        b = 1 - DoLP
-        DoLPmap = np.stack([r,g,b],numDim) # stack the h, s and v channels along a new dimension
-
-        # weight all channels by s0
-        DoLPmap[...,0] = DoLPmap[...,0]*s0
-        DoLPmap[...,1] = DoLPmap[...,1]*s0
-        DoLPmap[...,2] = DoLPmap[...,2]*s0
-        
-        DoLPmap = DoLPmap*255
-        DoLPmap = DoLPmap.astype(np.uint8) # convert to unsigned 8-bit integer values
-        DoLPmap_R = DoLPmap[...,0]
-        DoLPmap_G = DoLPmap[...,1]
-        DoLPmap_B = DoLPmap[...,2]
-        
-        # add new images for the 3 colour channels: HSVmap_R, HSVmap_G and HSVmap_B
-        if 'DoLPmap_R' in self.viewer.layers: # if layer already open, replace data
-            self.viewer.layers['DoLPmap_R'].data = DoLPmap_R
-        else:
-            self.viewer.add_image(DoLPmap_R,contrast_limits=[0,255],colormap="red",blending="additive",name="DoLPmap_R")
-
-        if 'DoLPmap_G' in self.viewer.layers: # if layer already open, replace data
-            self.viewer.layers['DoLPmap_G'].data = DoLPmap_G
-        else:
-            self.viewer.add_image(DoLPmap_G,contrast_limits=[0,255],colormap="green",blending="additive",name="DoLPmap_G")
-
-        if 'DoLPmap_B' in self.viewer.layers: # if layer already open, replace data
-            self.viewer.layers['DoLPmap_B'].data = DoLPmap_B
-        else:
-            self.viewer.add_image(DoLPmap_B,contrast_limits=[0,255],colormap="blue",blending="additive",name="DoLPmap_B")
-        
-        # link the internal napari contrast limits settings between the layes
-        layers_to_link = [self.viewer.layers['DoLPmap_R'],self.viewer.layers['DoLPmap_G'],self.viewer.layers['DoLPmap_B']]
-        link_layers(layers_to_link, ('contrast_limits', 'gamma', 'opacity'))
-        
-        # redraw the histograms
-        self.draw_s0_histogram(s0)
-        self.draw_dolp_histogram(DoLP)
+                if self.check_if_layer_is_loaded("DoLPmap_B_"+layer.name): # if layer already open, replace data
+                    self.viewer.layers["DoLPmap_B_"+layer.name].data = DoLPmap_B
+                else:
+                    self.viewer.add_image(DoLPmap_B,contrast_limits=[0,255],colormap="blue",blending="additive",name="DoLPmap_B_"+layer.name)
+                
+                # link the internal napari contrast limits settings between the layes
+                layers_to_link = [self.viewer.layers["DoLPmap_R_"+layer.name],
+                                  self.viewer.layers["DoLPmap_G_"+layer.name],
+                                  self.viewer.layers["DoLPmap_B_"+layer.name]]
+                link_layers(layers_to_link, ('contrast_limits', 'gamma', 'opacity'))
+                
+                # redraw the histograms
+                self.draw_s0_histogram(s0)
+                self.draw_dolp_histogram(DoLP)
+                break
     
     def _on_click_rerender_colmap(self):
         if self.check_only_one_layer_is_selected():
@@ -616,25 +625,9 @@ class StokesEstimation(QWidget):
         lim_s0 = (s0_min, s0_max)
         lim_dolp = (dolp_min, dolp_max)
         self._on_click_dolpmap(lim_s0,lim_dolp)
-         
-    def check_if_s0_is_loaded(self):
-        if 'S0' not in self.viewer.layers: return 0
-        else: return 1
-        
-    def check_if_s1_is_loaded(self):
-        if 'S1' not in self.viewer.layers: return 0
-        else: return 1
-        
-    def check_if_s2_is_loaded(self):
-        if 'S2' not in self.viewer.layers: return 0
-        else: return 1
-        
-    def check_if_dolp_is_loaded(self):
-        if 'DoLP' not in self.viewer.layers: return 0
-        else: return 1
-        
-    def check_if_aolp_is_loaded(self):
-        if 'AoLP' not in self.viewer.layers: return 0
+    
+    def check_if_layer_is_loaded(self,layerName):
+        if layerName not in self.viewer.layers: return 0
         else: return 1
 
     def draw_s0_histogram(self,S0):
