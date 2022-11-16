@@ -1,8 +1,10 @@
 """
 This module contains functions used for polarisation camera image processing.
 """
+
 import numpy as np
 from scipy.interpolate import RectBivariateSpline
+
 
 class PolarisationCameraImage():
     
@@ -25,12 +27,10 @@ class PolarisationCameraImage():
         self.imgSizeEven = (nrows,ncols)
         self.make_dimensions_even() # make image dimensions in x and y even
     
-    
     def subtract_bkgnd(self):
         bkgnd_corrected_img = self.img - self.offset
         bkgnd_corrected_img[bkgnd_corrected_img < 0] = 0
         self.img = bkgnd_corrected_img
-    
     
     def unprocessed_to_quadview(self):
         """ Rearrange pixels in a unprocessed data to form four chanels
@@ -66,10 +66,8 @@ class PolarisationCameraImage():
             quadview_btm = np.concatenate((ch10,ch11),axis=3)
             quadview = np.concatenate((quadview_top,quadview_btm),axis=2)
         else:
-            quadview = None
-        
+            quadview = None    
         return quadview
-    
     
     def convert_unprocessed(self):
         if self.method == 'None':
@@ -79,7 +77,6 @@ class PolarisationCameraImage():
         else:
             print('Unexpected value for input variable "method" in method "convert_unprocessed" in class "PolarisationCameraImage".')
         return I0, I45, I90, I135
-    
     
     def unprocessed_to_unassigned_channels(self):
         """ Reorganise pixels in unprocessed image to get four unassigned
@@ -107,7 +104,6 @@ class PolarisationCameraImage():
         
         else:
             print(f"Processing of a {self.numDim}-dimensional dataset is not supported in napari-polcam.")
-        
         return ch00, ch01, ch10, ch11
     
     def interpolate_channels(self):
@@ -171,9 +167,7 @@ class PolarisationCameraImage():
             print(f"Processing of a {self.numDim}-dimensional dataset is not supported in napari-polcam.")
         
         I0, I45, I90, I135 = self.assign_channel_to_transmission_axis_orientation(ch00_interpolated,ch01_interpolated,ch10_interpolated,ch11_interpolated)
-        
         return I0, I45, I90, I135
-    
     
     def estimate_channels_no_interpolation(self):
         """ Reorganise pixels in unprocessed image to get the 4 intensity
@@ -181,7 +175,6 @@ class PolarisationCameraImage():
         ch00,ch01,ch10,ch11 = self.unprocessed_to_unassigned_channels()
         I0,I45,I90,I135 = self.assign_channel_to_transmission_axis_orientation(ch00,ch01,ch10,ch11)
         return I0, I45, I90, I135
-    
     
     def interpolate_frame(self, xx, yy, ch, xx_hr, yy_hr):
         if self.method == 'Cubic spline interpolation':
@@ -192,7 +185,6 @@ class PolarisationCameraImage():
         else:
             print('Unexpected value for input variable "method" in method "convert_unprocessed" in class "PolarisationCameraImage".')
         return interpolated_frame
-
 
     def assign_channel_to_transmission_axis_orientation(self,ch00,ch01,ch10,ch11):
         """ Assign the different channels to the correct polariser orientation."""
@@ -220,7 +212,6 @@ class PolarisationCameraImage():
             print(f"The value {self.polariser_unit} is not supported.")
         return I0, I45, I90, I135
     
-    
     def make_dimensions_even(self):
         nrows, ncols = self.imgSizeEven
         if self.numDim == 2:
@@ -231,7 +222,6 @@ class PolarisationCameraImage():
             self.img = self.img[:, :, :ncols, :nrows]        
         else:
             print(f"Processing of a {self.numDim}-dimensional dataset is not supported in napari-polcam.")
-
 
     def get_mosaic_masks(numRepsMosaic):
         mask00 = np.array([[1, 0], [0, 0]])
@@ -244,14 +234,11 @@ class PolarisationCameraImage():
         mask11 = np.tile(mask11, (numRepsMosaic,numRepsMosaic))
         return mask00, mask01, mask10, mask11
     
-    
     def aolp_from_stokes(S1,S2):
         return (1/2)*np.arctan2(S2,S1)
     
-    
     def dolp_from_stokes(S0,S1,S2):
         return np.sqrt((S1**2 + S2**2)/(S0**2))
-    
     
     def intensities_from_stokes(S0,S1,S2):
         I0   = (S0 + S1)/2;
@@ -259,7 +246,6 @@ class PolarisationCameraImage():
         I45  = (S0 + S2)/2;
         I135 = (S0 - S2)/2;
         return I0, I45, I90, I135
-    
     
     def stokes_from_intensities(I0,I45,I90,I135):
         S0 = (I0 + I45 + I90 + I135)/2

@@ -257,10 +257,8 @@ class StokesEstimation(QWidget):
         self.draw_dolp_histogram([0,1]) # initialise histogram plot
 
     
-
     def _on_value_change_bkgnd(self):
         self.offset = float(self.lineedit_bkgnd.text())
-    
     
     def _on_click_quadview(self):
         """" Reorganise the pixels in an unprocessed polarisation camera image
@@ -277,7 +275,6 @@ class StokesEstimation(QWidget):
                 self.viewer.add_image(quadview, name="quadview_"+layer.name)
                 break
             return quadview
-    
     
     def _on_click_channels(self):
         """" Estimate the 4 intensity channels from an unprocessed polarisation
@@ -299,8 +296,7 @@ class StokesEstimation(QWidget):
                 self.viewer.add_image(I135, contrast_limits=[I_min, I_max], name="I135_"+layer.name)
                 break
             return I0, I45, I90, I135
-
-
+        
     def _on_click_stokes(self):
         """" Estimate the Stokes parameter images from an unprocessed polarisation
         camera image. Add three new layers (S0, S1 and S2) to the napari viewer.
@@ -346,7 +342,6 @@ class StokesEstimation(QWidget):
                     
             return S0, S1, S2
     
-    
     def calculate_stokes(self):
         """" Estimate the Stokes parameter images from an unprocessed polarisation
         camera image. """
@@ -370,7 +365,6 @@ class StokesEstimation(QWidget):
                 
         return S0, S1, S2
                      
-
     def _on_click_aolp(self,add_to_viewer=True):
         """" Calculate the Angle of Linear Polarisation (AoLP) image from the
         S1 and S2 layers that are open in the napari viewer. Add the AoLP image
@@ -395,7 +389,6 @@ class StokesEstimation(QWidget):
                     
             return AoLP
             
-        
     def _on_click_dolp(self,add_to_viewer=True):
         """" Calculate the Degree of Linear Polarisation (DoLP) image from the
         S0, S1 and S2 layers that are open in the napari viewer. Add the DoLP
@@ -419,13 +412,11 @@ class StokesEstimation(QWidget):
                 break
             return DoLP
     
-    
     def _on_click_btn_calculate_colmap(self):
         if self.dropdown_colmap.currentText() == 'HSVmap':
             self._on_click_hsvmap(None,None)
         elif self.dropdown_colmap.currentText() == 'DoLPmap':
             self._on_click_dolpmap(None,None)
-        
         
     def _on_click_hsvmap(self,lim_s0,lim_dolp):
         if self.check_only_one_layer_is_selected():
@@ -516,7 +507,6 @@ class StokesEstimation(QWidget):
                 self.draw_dolp_histogram(DoLP)
                 break
 
-
     def _on_click_dolpmap(self,lim_s0,lim_dolp):
         if self.check_only_one_layer_is_selected():
             for layer in self.viewer.layers.selection:
@@ -601,14 +591,12 @@ class StokesEstimation(QWidget):
                 self.draw_dolp_histogram(DoLP)
                 break
     
-    
     def _on_click_rerender_colmap(self):
         if self.check_only_one_layer_is_selected():
             if self.dropdown_colmap.currentText() == 'HSVmap':
                 self._on_click_rerender_hsvmap()
             elif self.dropdown_colmap.currentText() == 'DoLPmap':
                 self._on_click_rerender_dolpmap()
-        
         
     def _on_click_rerender_hsvmap(self):
         s0_min = float(self.lineedit_s0_min.text())
@@ -619,7 +607,6 @@ class StokesEstimation(QWidget):
         lim_dolp = (dolp_min, dolp_max)
         self._on_click_hsvmap(lim_s0,lim_dolp)
         
-        
     def _on_click_rerender_dolpmap(self):
         s0_min = float(self.lineedit_s0_min.text())
         s0_max = float(self.lineedit_s0_max.text())
@@ -628,7 +615,6 @@ class StokesEstimation(QWidget):
         lim_s0 = (s0_min, s0_max)
         lim_dolp = (dolp_min, dolp_max)
         self._on_click_dolpmap(lim_s0,lim_dolp)
-    
     
     def draw_s0_histogram(self,S0):
         # add a new plot to the s0_hist_widget or empty the old plot
@@ -644,7 +630,6 @@ class StokesEstimation(QWidget):
         self.plot_s0.setYRange(0, 1, padding=0)
         self.plot_s0.setLabel('bottom', "S0") # add x-axis label
         
-        
     def draw_dolp_histogram(self,DoLP):
         # add a new plot to the dolp_hist_widget or empty the old plot
         if not hasattr(self, "plot_dolp"):
@@ -658,11 +643,9 @@ class StokesEstimation(QWidget):
         self.plot_dolp.setYRange(0, 1, padding=0)
         self.plot_dolp.setLabel('bottom', "DoLP") # add x-axis label
     
-    
     def check_if_layer_is_loaded(self,layerName):
         if layerName not in self.viewer.layers: return 0
         else: return 1
-
 
     def check_only_one_layer_is_selected(self):
         numLayersSelected = len(self.viewer.layers.selection)
@@ -674,7 +657,6 @@ class StokesEstimation(QWidget):
         else:
             show_info(f"Please select only 1 layer. You selected {numLayersSelected} layers.")
             return False    
-
 
 
 class SetVoxelSize(QWidget):
