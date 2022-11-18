@@ -226,8 +226,11 @@ class StokesEstimation(QWidget):
         label_rerender_colmap.setText("Rerender with new min/max limits:")
         label_rerender_colmap.setAlignment(Qt.AlignCenter)
         btn_rerender_colmap = QPushButton("Rerender map")
+        btn_rerender_colmap.setDisabled(True) # initialise as disabled
+        btn_rerender_colmap.setVisible(False) # initialise as invisible
         btn_rerender_colmap.clicked.connect(self._on_click_rerender_colmap)
-        
+        self.btn_rerender_colmap = btn_rerender_colmap
+
         # group all colourmap processing gui elements in a box ================
         colmapProcessingGroupBox = QGroupBox("Colourmap rendering")
         basic_processing_box = QVBoxLayout()
@@ -417,6 +420,8 @@ class StokesEstimation(QWidget):
             self._on_click_hsvmap(None,None)
         elif self.dropdown_colmap.currentText() == 'DoLPmap':
             self._on_click_dolpmap(None,None)
+        self.btn_rerender_colmap.setDisabled(False)
+        self.btn_rerender_colmap.setVisible(True)
         
     def _on_click_hsvmap(self,lim_s0,lim_dolp):
         if self.check_only_one_layer_is_selected():
