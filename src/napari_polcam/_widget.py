@@ -553,6 +553,12 @@ class StokesEstimation(QWidget):
                 DoLP = (DoLP - dolp_min)/(dolp_max - dolp_min); # rescale DoLP
                 s0 = (s0 - s0_min)/(s0_max - s0_min); # rescale DoLP      
                 
+                # make sure values of DoLP and S0 are between [0, 1]
+                DoLP[DoLP < 0] = 0
+                DoLP[DoLP > 1] = 1
+                s0[s0 < 0] = 0
+                s0[s0 > 1] = 1
+
                 # create rgb stack
                 numDim = len(s0.shape) # number of dimensions of the dataset
                 r = DoLP
