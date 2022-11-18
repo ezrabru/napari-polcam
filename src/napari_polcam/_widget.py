@@ -470,6 +470,14 @@ class StokesEstimation(QWidget):
                 s = (s - dolp_min)/(dolp_max - dolp_min); # rescale DoLP
                 v = (v - s0_min)/(s0_max - s0_min); # rescale DoLP
 
+                # make sure values are between [0, 1]
+                h[h < 0] = 0
+                s[s < 0] = 0
+                v[v < 0] = 0
+                h[h > 1] = 1
+                s[s > 1] = 1
+                v[v > 1] = 1
+
                 # convert hsv to rgb
                 numDim = len(h.shape) # number of dimensions of the dataset
                 hsv = np.stack([h,s,v],numDim) # stack the h, s and v channels along a new dimension
