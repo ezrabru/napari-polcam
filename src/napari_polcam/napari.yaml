@@ -17,9 +17,6 @@ contributions:
     - id: napari-polcam.make_stokes_qwidget
       python_name: napari_polcam._widget:StokesEstimation
       title: Make Stokes Estimation QWidget
-    - id: napari-polcam.make_voxelsize_qwidget
-      python_name: napari_polcam._widget:SetVoxelSize
-      title: Make Set Voxel Size QWidget
   readers:
     - command: napari-polcam.get_reader
       accepts_directories: false
@@ -38,5 +35,3 @@ contributions:
   widgets:
     - command: napari-polcam.make_stokes_qwidget
       display_name: Stokes Estimation
-    - command: napari-polcam.make_voxelsize_qwidget
-      display_name: Set Voxel Size
