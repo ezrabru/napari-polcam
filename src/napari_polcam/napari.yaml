@@ -34,4 +34,4 @@ contributions:
       key: unique_id.1
   widgets:
     - command: napari-polcam.make_stokes_qwidget
-      display_name: Stokes Estimation
+      display_name: main
