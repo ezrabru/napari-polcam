@@ -1,5 +1,5 @@
 name: napari-polcam
-display_name: napari PolCam
+display_name: napari-polcam
 contributions:
   commands:
     - id: napari-polcam.make_stokes_qwidget
